@@ -1,0 +1,12 @@
+
+layout {
+    pane edit="src/main.rs"
+    pane edit="Cargo.toml"
+    pane command="bash" { // could also be done with watchexec or something similar
+        args "-c" "cargo build && zellij action start-or-reload-plugin file:target/wasm32-wasi/debug/favs.wasm"
+    }
+    pane {
+        plugin location="file:target/wasm32-wasi/debug/favs.wasm"
+    }
+}
+

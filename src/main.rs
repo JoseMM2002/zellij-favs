@@ -8,7 +8,7 @@ use zellij_tile::prelude::*;
 use zellij_tile::{register_plugin, shim::subscribe, ZellijPlugin};
 
 const FAVS_TEMPLATE: &str = r#"[]"#;
-const FAVS_PATH: &str = "/tmp/favs.json";
+const FAVS_PATH: &str = "/cache/favs.json";
 
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct FavSessionInfo {
@@ -22,6 +22,68 @@ enum FavMode {
     NavigateFavs,
     NavigateFlush,
     Filter,
+}
+
+impl FavMode {
+    fn get_commands(self) -> Vec<String> {
+        match self {
+            FavMode::Filter => {
+                vec![
+                    format!(
+                        "{} {}",
+                        "<Enter>".bold().purple(),
+                        "- Use filter".bold().yellow()
+                    ),
+                    format!(
+                        "{} {}",
+                        "<Left>".bold().purple(),
+                        "- Go to Favs".bold().yellow()
+                    ),
+                    format!(
+                        "{} {}",
+                        "<Right>".bold().purple(),
+                        "- Go to Flush".bold().yellow()
+                    ),
+                ]
+            }
+            FavMode::NavigateFavs => vec![
+                format!(
+                    "{} {}",
+                    "<Enter>".bold().purple(),
+                    "- Open session".bold().yellow()
+                ),
+                format!(
+                    "{} {}",
+                    "<Space>".bold().purple(),
+                    "- Move session to Flush".bold().yellow()
+                ),
+                format!(
+                    "{} {}",
+                    "<Tab>".bold().purple(),
+                    "- Navigate Flush items".bold().yellow()
+                ),
+                format!("{} {}", "/".bold().purple(), " - Filter".bold().yellow()),
+            ],
+            FavMode::NavigateFlush => vec![
+                format!(
+                    "{} {}",
+                    "<Enter>".bold().purple(),
+                    "- Open session".bold().yellow()
+                ),
+                format!(
+                    "{} {}",
+                    "<Space>".bold().purple(),
+                    "- Move session to Favs".bold().yellow()
+                ),
+                format!(
+                    "{} {}",
+                    "<Tab>".bold().yellow(),
+                    "- Navigate Favs items".bold().yellow()
+                ),
+                format!("{} {}", "/".bold().purple(), "- Filter".bold().yellow()),
+            ],
+        }
+    }
 }
 
 struct Favs {
@@ -250,7 +312,7 @@ impl ZellijPlugin for Favs {
         );
 
         let favs_title = if self.mode == FavMode::NavigateFavs {
-            format!("{}", "Favorites".bold().green())
+            format!("{}", "Favorites".bold().blue())
         } else {
             format!("{}", "Favorites".bold().dimmed())
         };
@@ -280,7 +342,7 @@ impl ZellijPlugin for Favs {
         }
 
         let flush_title = if self.mode == FavMode::NavigateFlush {
-            format!("{}", "Flush".bold().green())
+            format!("{}", "Flush".bold().blue())
         } else {
             format!("{}", "Flush".bold().dimmed())
         };
@@ -307,13 +369,7 @@ impl ZellijPlugin for Favs {
             print_text_with_coordinates(text, half_cols, 2 + i, None, None);
         }
 
-        let commands = format!(
-            "{}  {}  {}  {}",
-            "<Tab> - Change Flush/Favs".bold().yellow(),
-            "<Space> - Move to Flush/Favs".bold().yellow(),
-            "<f> - Flush non favorites".bold().yellow(),
-            "</> - Filter".bold().yellow()
-        );
+        let commands = self.mode.clone().get_commands().join("  ");
 
         print_text_with_coordinates(Text::new(commands), 0, rows, None, None);
     }

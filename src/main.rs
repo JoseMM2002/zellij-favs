@@ -9,7 +9,7 @@ use zellij_tile::{register_plugin, shim::subscribe, ZellijPlugin};
 
 const FAVS_TEMPLATE: &str = r#"[]"#;
 
-const FAVS_PATH: &str = "favs.json";
+const FAVS_PATH: &str = "/host/favs.json";
 
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct FavSessionInfo {
@@ -58,6 +58,8 @@ impl Default for Favs {
     }
 }
 
+register_plugin!(Favs);
+
 impl Favs {
     fn match_key(&mut self, key: &BareKey) -> bool {
         match &mut self.mode {
@@ -70,7 +72,7 @@ impl Favs {
                         BareKey::Backspace => {
                             filter.pop();
                         }
-                        BareKey::Insert | BareKey::Left => {
+                        BareKey::Enter | BareKey::Left => {
                             self.mode = FavMode::NavigateFavs;
                             self.cursor = 0;
                         }
@@ -90,7 +92,9 @@ impl Favs {
                 };
                 match key {
                     BareKey::Char('j') => {
-                        self.cursor = (self.cursor + 1).min(arr_length);
+                        if self.cursor + 1 < arr_length {
+                            self.cursor += 1;
+                        }
                     }
                     BareKey::Char('k') => {
                         if self.cursor > 0 {
@@ -113,7 +117,7 @@ impl Favs {
 
                         self.flush_sessions = vec![];
                     }
-                    BareKey::Char('r') => {
+                    BareKey::Char('/') => {
                         self.mode = FavMode::Filter;
                         self.filter = Some(String::new());
                     }
@@ -122,8 +126,8 @@ impl Favs {
                             let session = self.fav_sessions.remove(self.cursor);
                             self.flush_sessions.push(session);
                         } else {
-                            let session = self.fav_sessions.remove(self.cursor);
-                            self.flush_sessions.push(session);
+                            let session = self.flush_sessions.remove(self.cursor);
+                            self.fav_sessions.push(session);
                         }
                     }
                     BareKey::Tab => {
@@ -194,6 +198,15 @@ impl ZellijPlugin for Favs {
                     FavMode::Filter => {}
                 }
 
+                let favs_to_save: Vec<String> = self
+                    .fav_sessions
+                    .iter()
+                    .map(|session| session.name.clone())
+                    .collect();
+                let mut file = File::create(FAVS_PATH).unwrap();
+                let json = serde_json::to_string(&favs_to_save).unwrap();
+                file.write_all(json.as_bytes()).unwrap();
+
                 render = true;
             }
             _ => {}
@@ -201,7 +214,7 @@ impl ZellijPlugin for Favs {
         render
     }
 
-    fn render(&mut self, _rows: usize, cols: usize) {
+    fn render(&mut self, rows: usize, cols: usize) {
         let half_cols = cols / 2;
 
         println!(
@@ -214,13 +227,29 @@ impl ZellijPlugin for Favs {
             }
         );
 
-        let favorites_title = "Favorites";
-        let text = Text::new(favorites_title).color_range(0, 0..favorites_title.len());
-        print_text_with_coordinates(text, 0, 1, None, None);
+        let favs_title = if self.mode == FavMode::NavigateFavs {
+            format!("{}", "Favorites".bold().green())
+        } else {
+            format!("{}", "Favorites".bold().dimmed())
+        };
 
-        for (i, session) in self.fav_sessions.iter().enumerate() {
+        print_text_with_coordinates(Text::new(favs_title), 0, 1, None, None);
+
+        for (i, session) in self
+            .fav_sessions
+            .iter()
+            .filter(|session| {
+                if let Some(filter) = self.filter.clone() {
+                    session.name.to_lowercase().contains(&filter.to_lowercase())
+                } else {
+                    true
+                }
+            })
+            .enumerate()
+        {
             let text = if self.mode == FavMode::NavigateFavs && self.cursor == i {
-                Text::new(session.name.clone()).selected()
+                let selected = format!("{} {}", ">".cyan(), session.name.clone());
+                Text::new(selected).selected()
             } else {
                 Text::new(session.name.clone())
             };
@@ -228,19 +257,42 @@ impl ZellijPlugin for Favs {
             print_text_with_coordinates(text, 0, 2 + i, None, None);
         }
 
-        let flush_title = "Flush";
-        let text = Text::new(flush_title).color_range(0, 0..flush_title.len());
-        print_text_with_coordinates(text, half_cols, 1, None, None);
+        let flush_title = if self.mode == FavMode::NavigateFlush {
+            format!("{}", "Flush".bold().green())
+        } else {
+            format!("{}", "Flush".bold().dimmed())
+        };
+        print_text_with_coordinates(Text::new(flush_title), half_cols, 1, None, None);
 
-        for (i, session) in self.flush_sessions.iter().enumerate() {
+        for (i, session) in self
+            .flush_sessions
+            .iter()
+            .filter(|session| {
+                if let Some(filter) = self.filter.clone() {
+                    session.name.to_lowercase().contains(&filter.to_lowercase())
+                } else {
+                    true
+                }
+            })
+            .enumerate()
+        {
             let text = if self.mode == FavMode::NavigateFlush && self.cursor == i {
-                Text::new(session.name.clone()).selected()
+                let selected = format!("{} {}", ">".cyan(), session.name.clone());
+                Text::new(selected).selected()
             } else {
                 Text::new(session.name.clone())
             };
             print_text_with_coordinates(text, half_cols, 2 + i, None, None);
         }
+
+        let commands = format!(
+            "{}  {}  {}  {}",
+            "<Tab> - Change Flush/Favs".bold().yellow(),
+            "<Space> - Move to Flush/Favs".bold().yellow(),
+            "<f> - Flush non favorites".bold().yellow(),
+            "</> - Filter".bold().yellow()
+        );
+
+        print_text_with_coordinates(Text::new(commands), 0, rows, None, None);
     }
 }
-
-register_plugin!(Favs);

@@ -122,16 +122,25 @@ impl Favs {
                     }
                     BareKey::Char(' ') => {
                         if self.mode == FavMode::NavigateFavs {
+                            if self.fav_sessions.len() == 0 {
+                                return false;
+                            }
                             let session = self.fav_sessions.remove(self.cursor);
                             self.flush_sessions.push(session);
-                            if self.cursor + 1 > self.fav_sessions.len() {
-                                self.cursor = self.fav_sessions.len();
+                            if self.cursor == self.fav_sessions.len() && self.fav_sessions.len() > 0
+                            {
+                                self.cursor -= 1;
                             }
                         } else {
+                            if self.flush_sessions.len() == 0 {
+                                return false;
+                            }
                             let session = self.flush_sessions.remove(self.cursor);
                             self.fav_sessions.push(session);
-                            if self.cursor + 1 > self.flush_sessions.len() {
-                                self.cursor = self.flush_sessions.len();
+                            if self.cursor == self.flush_sessions.len()
+                                && self.flush_sessions.len() > 0
+                            {
+                                self.cursor -= 1;
                             }
                         }
                     }

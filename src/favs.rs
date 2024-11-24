@@ -183,6 +183,7 @@ impl ZellijPlugin for Favs {
                 let val: SyncMessage = serde_json::from_str(&payload.as_str()).unwrap();
                 self.fav_sessions = val.favs;
                 self.flush_sessions = val.flush;
+                render = true;
             }
             Event::SessionUpdate(sessions_info, resurrectable_session_list) => {
                 let mut current_sessions: Vec<FavSessionInfo> = sessions_info
@@ -225,6 +226,7 @@ impl ZellijPlugin for Favs {
                     .iter()
                     .map(|session| session.name.clone())
                     .collect();
+
                 let mut file = File::create(FAVS_PATH).unwrap();
                 let json = serde_json::to_string(&favs_to_save).unwrap();
                 file.write_all(json.as_bytes()).unwrap();

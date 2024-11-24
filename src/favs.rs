@@ -1,8 +1,9 @@
 use std::{fs::File, io::Write};
 
 use owo_colors::OwoColorize;
+use uuid::Uuid;
 use zellij_tile::{
-    prelude::{BareKey, Event, EventType, PermissionType, PluginMessage},
+    prelude::*,
     shim::{
         delete_dead_session, kill_sessions, post_message_to, print_text_with_coordinates,
         request_permission, subscribe, switch_session, Text,
@@ -22,6 +23,7 @@ pub struct Favs {
     cursor: usize,
     mode: FavMode,
     filter: Option<String>,
+    id: Uuid,
 }
 
 impl Default for Favs {
@@ -46,6 +48,7 @@ impl Default for Favs {
             mode: FavMode::NavigateFavs,
             filter: None,
             flush_sessions: vec![],
+            id: Uuid::new_v4(),
         }
     }
 }
@@ -181,9 +184,11 @@ impl ZellijPlugin for Favs {
             }
             Event::CustomMessage(_message, payload) => {
                 let val: SyncMessage = serde_json::from_str(&payload.as_str()).unwrap();
-                self.fav_sessions = val.favs;
-                self.flush_sessions = val.flush;
-                render = true;
+                if val.sender_id != self.id {
+                    self.fav_sessions = val.favs;
+                    self.flush_sessions = val.flush;
+                    render = true;
+                }
             }
             Event::SessionUpdate(sessions_info, resurrectable_session_list) => {
                 let mut current_sessions: Vec<FavSessionInfo> = sessions_info
@@ -234,6 +239,7 @@ impl ZellijPlugin for Favs {
                 let worker_message = SyncMessage {
                     favs: self.fav_sessions.clone(),
                     flush: self.flush_sessions.clone(),
+                    sender_id: self.id,
                 };
 
                 post_message_to(PluginMessage {

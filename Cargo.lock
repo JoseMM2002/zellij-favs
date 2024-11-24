@@ -463,12 +463,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54261aba646433cb567ec89844be4c4825ca92a4f8afba52fc4dd88436e31bbd"
 
 [[package]]
-name = "common-path"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2382f75942f4b3be3690fe4f86365e9c853c1587d6ee58212cebf6e2a9ccd101"
-
-[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1807,15 +1801,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
-name = "openssl-src"
-version = "300.4.0+3.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a709e02f2b4aca747929cca5ed248880847c650233cf8b8cdc48f40aaf4898a6"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "openssl-sys"
 version = "0.9.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1823,7 +1808,6 @@ checksum = "45abf306cbf99debc8195b66b7346498d7b10c210de50418b5ccd7ceba08c741"
 dependencies = [
  "cc",
  "libc",
- "openssl-src",
  "pkg-config",
  "vcpkg",
 ]
@@ -3423,14 +3407,15 @@ dependencies = [
  "owo-colors",
  "serde",
  "serde_json",
+ "uuid",
  "zellij-tile",
 ]
 
 [[package]]
 name = "zellij-tile"
-version = "0.41.1"
+version = "0.41.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c69ab086f62f2c34a5cc910fbb49ef1b381b1c886b2bff797362370e865a897"
+checksum = "00d9fa972c8b045359a1451ec55ee77906d6231592ef8cdb0a3f275972b21b96"
 dependencies = [
  "clap",
  "serde",
@@ -3442,9 +3427,9 @@ dependencies = [
 
 [[package]]
 name = "zellij-utils"
-version = "0.41.1"
+version = "0.41.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaf2abb7df122509d0ac688e277a344acfb578e88cf5dc783ed0670d7cb8ba11"
+checksum = "0a791fae542909bccb8f8d8fcf521cfbe0af2c196526f2acbe67f4d7a5db6978"
 dependencies = [
  "anyhow",
  "async-channel 1.9.0",
@@ -3455,9 +3440,7 @@ dependencies = [
  "clap_complete",
  "colored",
  "colorsys",
- "common-path",
  "crossbeam",
- "curl-sys",
  "directories",
  "futures",
  "humantime",
@@ -3473,7 +3456,6 @@ dependencies = [
  "nix 0.23.2",
  "notify-debouncer-full",
  "once_cell",
- "openssl-sys",
  "percent-encoding",
  "prost",
  "prost-build",

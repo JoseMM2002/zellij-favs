@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use zellij_tile::{prelude::PluginMessage, shim::post_message_to_plugin, ZellijWorker};
 
 use crate::FavSessionInfo;
@@ -10,13 +11,18 @@ pub struct FavSynchronizer {}
 pub struct SyncMessage {
     pub favs: Vec<FavSessionInfo>,
     pub flush: Vec<FavSessionInfo>,
+    pub sender_id: Uuid,
 }
 
-pub const FAV_SYNCHRONIZER_NAME: &str = "FavSynchronizer";
+pub const FAV_SYNCHRONIZER_NAME: &str = "fav";
 pub const FAV_SYNCHRONIZER_MESSAGE: &str = "Sync";
+
+pub const SYNCHRONZER_LOG_PATH: &str = "/host/sync.log";
 
 impl ZellijWorker<'_> for FavSynchronizer {
     fn on_message(&mut self, message: String, payload: String) {
+        eprintln!("zellij-favs-worker-payload: {}", payload);
+
         post_message_to_plugin(PluginMessage {
             name: message,
             payload,

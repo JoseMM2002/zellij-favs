@@ -124,9 +124,15 @@ impl Favs {
                         if self.mode == FavMode::NavigateFavs {
                             let session = self.fav_sessions.remove(self.cursor);
                             self.flush_sessions.push(session);
+                            if self.cursor + 1 > self.fav_sessions.len() {
+                                self.cursor = self.fav_sessions.len();
+                            }
                         } else {
                             let session = self.flush_sessions.remove(self.cursor);
                             self.fav_sessions.push(session);
+                            if self.cursor + 1 > self.flush_sessions.len() {
+                                self.cursor = self.flush_sessions.len();
+                            }
                         }
                     }
                     BareKey::Tab => {
@@ -138,6 +144,14 @@ impl Favs {
                             self.cursor = self.cursor.min(self.fav_sessions.len());
                         }
                         self.cursor = 0;
+                    }
+                    BareKey::Enter => {
+                        let session = if self.mode == FavMode::NavigateFavs {
+                            self.fav_sessions[self.cursor].clone()
+                        } else {
+                            self.flush_sessions[self.cursor].clone()
+                        };
+                        switch_session(Some(session.name.as_str()));
                     }
                     _ => return false,
                 };

@@ -8,8 +8,7 @@ use zellij_tile::prelude::*;
 use zellij_tile::{register_plugin, shim::subscribe, ZellijPlugin};
 
 const FAVS_TEMPLATE: &str = r#"[]"#;
-
-const FAVS_PATH: &str = "/host/favs.json";
+const FAVS_PATH: &str = "/tmp/favs.json";
 
 #[derive(Default, Clone, Serialize, Deserialize)]
 struct FavSessionInfo {

@@ -1,10 +1,11 @@
 [package]
 name = "zellij-favs"
 version = "0.1.0"
+authors = ["JoseMM2002 <jeolmmt@gmail.com>"]
 edition = "2021"
 
 [dependencies]
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
 owo-colors = "3"
-zellij-tile = "0.41"
+zellij-tile = "0.41.1"

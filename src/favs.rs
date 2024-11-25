@@ -109,6 +109,7 @@ impl Favs {
                         }
 
                         self.flush_sessions = vec![];
+                        self.commit_fav_changes();
                     }
                     BareKey::Char('/') => {
                         self.mode = FavMode::Filter;
@@ -137,6 +138,7 @@ impl Favs {
                                 self.cursor -= 1;
                             }
                         }
+                        self.commit_fav_changes();
                     }
                     BareKey::Tab => {
                         if self.mode == FavMode::NavigateFavs {
@@ -161,6 +163,29 @@ impl Favs {
             }
         }
         true
+    }
+    fn commit_fav_changes(&self) {
+        let favs_to_save: Vec<String> = self
+            .fav_sessions
+            .iter()
+            .map(|session| session.name.clone())
+            .collect();
+
+        let mut file = File::create(FAVS_PATH).unwrap();
+        let json = serde_json::to_string(&favs_to_save).unwrap();
+        file.write_all(json.as_bytes()).unwrap();
+
+        let worker_message = SyncMessage {
+            favs: self.fav_sessions.clone(),
+            flush: self.flush_sessions.clone(),
+            sender_id: self.id,
+        };
+
+        post_message_to(PluginMessage {
+            name: FAV_SYNCHRONIZER_MESSAGE.to_string(),
+            payload: serde_json::to_string(&worker_message).unwrap(),
+            worker_name: Some(FAV_SYNCHRONIZER_NAME.to_string()),
+        });
     }
 }
 
@@ -187,8 +212,9 @@ impl ZellijPlugin for Favs {
                 if val.sender_id != self.id {
                     self.fav_sessions = val.favs;
                     self.flush_sessions = val.flush;
-                    render = true;
+                    return true;
                 }
+                return false;
             }
             Event::SessionUpdate(sessions_info, resurrectable_session_list) => {
                 let mut current_sessions: Vec<FavSessionInfo> = sessions_info
@@ -226,32 +252,13 @@ impl ZellijPlugin for Favs {
                     FavMode::Filter => {}
                 }
 
-                let favs_to_save: Vec<String> = self
-                    .fav_sessions
-                    .iter()
-                    .map(|session| session.name.clone())
-                    .collect();
-
-                let mut file = File::create(FAVS_PATH).unwrap();
-                let json = serde_json::to_string(&favs_to_save).unwrap();
-                file.write_all(json.as_bytes()).unwrap();
-
-                let worker_message = SyncMessage {
-                    favs: self.fav_sessions.clone(),
-                    flush: self.flush_sessions.clone(),
-                    sender_id: self.id,
-                };
-
-                post_message_to(PluginMessage {
-                    name: FAV_SYNCHRONIZER_MESSAGE.to_string(),
-                    payload: serde_json::to_string(&worker_message).unwrap(),
-                    worker_name: Some(FAV_SYNCHRONIZER_NAME.to_string()),
-                });
+                self.commit_fav_changes();
 
                 render = true;
             }
             _ => {}
         }
+
         render
     }
 
@@ -259,13 +266,14 @@ impl ZellijPlugin for Favs {
         let half_cols = cols / 2;
 
         println!(
-            "{} {}",
+            "{} {}    {}",
             ">".cyan().bold(),
             if let Some(filter) = &self.filter {
                 filter.dimmed().italic().to_string()
             } else {
                 "(filter)".dimmed().italic().to_string()
-            }
+            },
+            self.id.to_string().dimmed().green()
         );
 
         let favs_title = if self.mode == FavMode::NavigateFavs {

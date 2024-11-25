@@ -157,6 +157,10 @@ impl Favs {
                             self.flush_sessions[self.cursor].clone()
                         };
                         switch_session(Some(session.name.as_str()));
+                        close_self();
+                    }
+                    BareKey::Esc => {
+                        close_self();
                     }
                     _ => return false,
                 };
@@ -273,7 +277,7 @@ impl ZellijPlugin for Favs {
             } else {
                 "(filter)".dimmed().italic().to_string()
             },
-            self.id.to_string().dimmed().green()
+            self.id.to_string().dimmed().green(),
         );
 
         let favs_title = if self.mode == FavMode::NavigateFavs {

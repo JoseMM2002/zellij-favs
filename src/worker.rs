@@ -17,8 +17,6 @@ pub struct SyncMessage {
 pub const FAV_SYNCHRONIZER_NAME: &str = "fav";
 pub const FAV_SYNCHRONIZER_MESSAGE: &str = "Sync";
 
-pub const SYNCHRONZER_LOG_PATH: &str = "/host/sync.log";
-
 impl ZellijWorker<'_> for FavSynchronizer {
     fn on_message(&mut self, message: String, payload: String) {
         eprintln!("zellij-favs-worker-payload: {}", payload);

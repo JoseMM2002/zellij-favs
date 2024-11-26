@@ -32,6 +32,7 @@ impl FavMode {
                 ]
             }
             FavMode::NavigateFavs => vec![
+                format!("{}", "↑k | ↓j".bold().purple(),),
                 format!(
                     "{} {}",
                     "<Enter>".bold().purple(),

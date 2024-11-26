@@ -171,18 +171,6 @@ impl Favs {
         let mut file = File::create(FAVS_PATH).unwrap();
         let json = serde_json::to_string(&favs_to_save).unwrap();
         file.write_all(json.as_bytes()).unwrap();
-
-        // let worker_message = SyncMessage {
-        //     favs: self.fav_sessions.clone(),
-        //     flush: self.flush_sessions.clone(),
-        //     sender_id: self.id,
-        // };
-
-        // post_message_to(PluginMessage {
-        //     name: FAV_SYNCHRONIZER_MESSAGE.to_string(),
-        //     payload: serde_json::to_string(&worker_message).unwrap(),
-        //     worker_name: Some(FAV_SYNCHRONIZER_NAME.to_string()),
-        // });
     }
 }
 

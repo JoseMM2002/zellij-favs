@@ -17,7 +17,7 @@ A simple and intuitive plugin for managing favorite sessions in Zellij. With zel
   After filtering, press Enter to return to the sessions list.
 
 - Switching Lists:
-  Press Tab to switch between the "Favorites" and "Sessions" lists.
+  Press Tab to switch between the "Favorites" and "Flush" lists.
 
 - Managing Sessions:
   Highlight a session and press Space to move it between "Favorites" and "Sessions."
@@ -27,3 +27,6 @@ A simple and intuitive plugin for managing favorite sessions in Zellij. With zel
 
 - Accessing a Session:
   Highlight a session and press Enter to open it.
+
+- Close panel plugin:
+  Press Esc to exit the plugin

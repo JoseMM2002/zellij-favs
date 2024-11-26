@@ -270,14 +270,13 @@ impl ZellijPlugin for Favs {
         let half_cols = cols / 2;
 
         println!(
-            "{} {}    {}",
+            "{} {}",
             ">".cyan().bold(),
             if let Some(filter) = &self.filter {
                 filter.dimmed().italic().to_string()
             } else {
                 "(filter)".dimmed().italic().to_string()
             },
-            self.id.to_string().dimmed().green(),
         );
 
         let favs_title = if self.mode == FavMode::NavigateFavs {

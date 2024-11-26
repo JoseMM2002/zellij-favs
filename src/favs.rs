@@ -1,21 +1,16 @@
 use std::{fs::File, io::Write};
 
 use owo_colors::OwoColorize;
-use uuid::Uuid;
 use zellij_tile::{
     prelude::*,
     shim::{
-        delete_dead_session, kill_sessions, post_message_to, print_text_with_coordinates,
-        request_permission, subscribe, switch_session, Text,
+        delete_dead_session, kill_sessions, print_text_with_coordinates, request_permission,
+        subscribe, switch_session, Text,
     },
     ZellijPlugin,
 };
 
-use crate::{
-    favs_mode::FavMode,
-    worker::{SyncMessage, FAV_SYNCHRONIZER_MESSAGE, FAV_SYNCHRONIZER_NAME},
-    FavSessionInfo, FAVS_PATH, FAVS_TEMPLATE,
-};
+use crate::{favs_mode::FavMode, FavSessionInfo, FAVS_PATH, FAVS_TEMPLATE};
 
 pub struct Favs {
     fav_sessions: Vec<FavSessionInfo>,
@@ -23,7 +18,6 @@ pub struct Favs {
     cursor: usize,
     mode: FavMode,
     filter: Option<String>,
-    id: Uuid,
 }
 
 impl Default for Favs {
@@ -48,7 +42,6 @@ impl Default for Favs {
             mode: FavMode::NavigateFavs,
             filter: None,
             flush_sessions: vec![],
-            id: Uuid::new_v4(),
         }
     }
 }
@@ -179,17 +172,17 @@ impl Favs {
         let json = serde_json::to_string(&favs_to_save).unwrap();
         file.write_all(json.as_bytes()).unwrap();
 
-        let worker_message = SyncMessage {
-            favs: self.fav_sessions.clone(),
-            flush: self.flush_sessions.clone(),
-            sender_id: self.id,
-        };
+        // let worker_message = SyncMessage {
+        //     favs: self.fav_sessions.clone(),
+        //     flush: self.flush_sessions.clone(),
+        //     sender_id: self.id,
+        // };
 
-        post_message_to(PluginMessage {
-            name: FAV_SYNCHRONIZER_MESSAGE.to_string(),
-            payload: serde_json::to_string(&worker_message).unwrap(),
-            worker_name: Some(FAV_SYNCHRONIZER_NAME.to_string()),
-        });
+        // post_message_to(PluginMessage {
+        //     name: FAV_SYNCHRONIZER_MESSAGE.to_string(),
+        //     payload: serde_json::to_string(&worker_message).unwrap(),
+        //     worker_name: Some(FAV_SYNCHRONIZER_NAME.to_string()),
+        // });
     }
 }
 
@@ -210,15 +203,6 @@ impl ZellijPlugin for Favs {
         match event {
             Event::Key(key) => {
                 render = self.match_key(&key.bare_key);
-            }
-            Event::CustomMessage(_message, payload) => {
-                let val: SyncMessage = serde_json::from_str(&payload.as_str()).unwrap();
-                if val.sender_id != self.id {
-                    self.fav_sessions = val.favs;
-                    self.flush_sessions = val.flush;
-                    return true;
-                }
-                return false;
             }
             Event::SessionUpdate(sessions_info, resurrectable_session_list) => {
                 let mut current_sessions: Vec<FavSessionInfo> = sessions_info

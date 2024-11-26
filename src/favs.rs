@@ -238,7 +238,7 @@ impl ZellijPlugin for Favs {
         render
     }
 
-    fn render(&mut self, rows: usize, cols: usize) {
+    fn render(&mut self, _rows: usize, cols: usize) {
         let half_cols = cols / 2;
 
         println!(
@@ -309,8 +309,8 @@ impl ZellijPlugin for Favs {
             print_text_with_coordinates(text, half_cols, 2 + i, None, None);
         }
 
-        let commands = self.mode.clone().get_commands().join("  ");
+        // let commands = self.mode.clone().get_commands().join("  ");
 
-        print_text_with_coordinates(Text::new(commands), 0, rows, None, None);
+        // print_text_with_coordinates(Text::new(commands), 0, rows, None, None);
     }
 }

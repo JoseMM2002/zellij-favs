@@ -164,6 +164,7 @@ impl Favs {
                                 .unwrap();
 
                             self.flush_sessions.remove(session_idx);
+                            self.fav_sessions.push(session);
                             if self.cursor == self.flush_sessions.len()
                                 && self.flush_sessions.len() > 0
                             {

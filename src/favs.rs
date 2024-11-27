@@ -113,7 +113,26 @@ impl Favs {
                             if self.fav_sessions.len() == 0 {
                                 return false;
                             }
-                            let session = self.fav_sessions.remove(self.cursor);
+                            let fav_sessions: Vec<&FavSessionInfo> = self
+                                .fav_sessions
+                                .iter()
+                                .filter(|session| {
+                                    if let Some(filter) = self.filter.clone() {
+                                        session.name.to_lowercase().contains(&filter.to_lowercase())
+                                    } else {
+                                        true
+                                    }
+                                })
+                                .collect();
+
+                            let session = fav_sessions[self.cursor].clone();
+                            let session_idx = self
+                                .fav_sessions
+                                .iter()
+                                .position(|s| s.name == session.name)
+                                .unwrap();
+
+                            self.fav_sessions.remove(session_idx);
                             self.flush_sessions.push(session);
                             if self.cursor == self.fav_sessions.len() && self.fav_sessions.len() > 0
                             {
@@ -123,8 +142,26 @@ impl Favs {
                             if self.flush_sessions.len() == 0 {
                                 return false;
                             }
-                            let session = self.flush_sessions.remove(self.cursor);
-                            self.fav_sessions.push(session);
+                            let flush_sessions: Vec<&FavSessionInfo> = self
+                                .flush_sessions
+                                .iter()
+                                .filter(|session| {
+                                    if let Some(filter) = self.filter.clone() {
+                                        session.name.to_lowercase().contains(&filter.to_lowercase())
+                                    } else {
+                                        true
+                                    }
+                                })
+                                .collect();
+
+                            let session = flush_sessions[self.cursor].clone();
+                            let session_idx = self
+                                .flush_sessions
+                                .iter()
+                                .position(|s| s.name == session.name)
+                                .unwrap();
+
+                            self.flush_sessions.remove(session_idx);
                             if self.cursor == self.flush_sessions.len()
                                 && self.flush_sessions.len() > 0
                             {

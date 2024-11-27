@@ -1,4 +1,4 @@
-use std::fs::{self};
+use std::{fs::File, io::Write};
 
 use owo_colors::OwoColorize;
 use zellij_tile::{
@@ -22,22 +22,14 @@ pub struct Favs {
 
 impl Default for Favs {
     fn default() -> Self {
-        let fav_sessions_json: Vec<String> = if let Ok(favs) = fs::read_to_string(FAVS_PATH_TMP) {
-            serde_json::from_str(&favs).unwrap()
-        } else {
-            let favs = FAVS_TEMPLATE.to_string();
-            fs::write(FAVS_PATH_TMP, favs.clone()).unwrap();
-            serde_json::from_str(&favs).unwrap()
-        };
+        if !std::path::Path::new(FAVS_PATH_TMP).exists() {
+            let create = File::create(FAVS_PATH_TMP);
+            let mut file = create.unwrap();
+            file.write_all(FAVS_TEMPLATE.as_bytes()).unwrap();
+        }
 
         Self {
-            fav_sessions: fav_sessions_json
-                .iter()
-                .map(|name| FavSessionInfo {
-                    name: name.to_string(),
-                    is_active: false,
-                })
-                .collect(),
+            fav_sessions: vec![],
             cursor: 0,
             mode: FavMode::NavigateFavs,
             filter: None,
@@ -208,7 +200,9 @@ impl Favs {
             .map(|session| session.name.clone())
             .collect();
         let json = serde_json::to_string(&favs_to_save).unwrap();
-        std::fs::write(FAVS_PATH_TMP, json.clone()).unwrap();
+
+        let mut file = File::create(FAVS_PATH_TMP).unwrap();
+        file.write_all(json.as_bytes()).unwrap();
     }
 }
 
@@ -217,6 +211,7 @@ impl ZellijPlugin for Favs {
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
+            PermissionType::MessageAndLaunchOtherPlugins,
         ]);
         subscribe(&[
             EventType::Key,
@@ -224,6 +219,7 @@ impl ZellijPlugin for Favs {
             EventType::CustomMessage,
         ]);
     }
+
     fn update(&mut self, event: zellij_tile::prelude::Event) -> bool {
         let mut render = false;
         match event {
@@ -246,12 +242,16 @@ impl ZellijPlugin for Favs {
                     }
                 }));
 
+                let fav_sessions_json: Vec<String> =
+                    serde_json::from_reader(File::open(FAVS_PATH_TMP).unwrap()).unwrap();
+
+                eprintln!("fav_sessions_json: {:?}", fav_sessions_json);
+
                 let (fav_sessions, flush_sessions): (Vec<FavSessionInfo>, Vec<FavSessionInfo>) =
-                    current_sessions.iter().cloned().partition(|current| {
-                        self.fav_sessions
-                            .iter()
-                            .any(|saved| saved.name == current.name)
-                    });
+                    current_sessions
+                        .iter()
+                        .cloned()
+                        .partition(|current| fav_sessions_json.contains(&current.name));
 
                 self.fav_sessions = fav_sessions;
                 self.flush_sessions = flush_sessions;
@@ -346,9 +346,5 @@ impl ZellijPlugin for Favs {
             };
             print_text_with_coordinates(text, half_cols, 2 + i, None, None);
         }
-
-        // let commands = self.mode.clone().get_commands().join("  ");
-
-        // print_text_with_coordinates(Text::new(commands), 0, rows, None, None);
     }
 }

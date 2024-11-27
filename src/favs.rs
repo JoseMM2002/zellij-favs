@@ -110,9 +110,6 @@ impl Favs {
                     }
                     BareKey::Char(' ') => {
                         if self.mode == FavMode::NavigateFavs {
-                            if self.fav_sessions.len() == 0 {
-                                return false;
-                            }
                             let fav_sessions: Vec<&FavSessionInfo> = self
                                 .fav_sessions
                                 .iter()
@@ -124,6 +121,10 @@ impl Favs {
                                     }
                                 })
                                 .collect();
+
+                            if fav_sessions.len() == 0 {
+                                return false;
+                            }
 
                             let session = fav_sessions[self.cursor].clone();
                             let session_idx = self
@@ -139,9 +140,6 @@ impl Favs {
                                 self.cursor -= 1;
                             }
                         } else {
-                            if self.flush_sessions.len() == 0 {
-                                return false;
-                            }
                             let flush_sessions: Vec<&FavSessionInfo> = self
                                 .flush_sessions
                                 .iter()
@@ -153,6 +151,10 @@ impl Favs {
                                     }
                                 })
                                 .collect();
+
+                            if flush_sessions.len() == 0 {
+                                return false;
+                            }
 
                             let session = flush_sessions[self.cursor].clone();
                             let session_idx = self

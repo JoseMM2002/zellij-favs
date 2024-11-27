@@ -217,7 +217,6 @@ impl ZellijPlugin for Favs {
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
-            PermissionType::OpenFiles,
         ]);
         subscribe(&[
             EventType::Key,

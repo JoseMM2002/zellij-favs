@@ -1,4 +1,4 @@
-use std::{fs::File, io::Write};
+use std::fs::{self};
 
 use owo_colors::OwoColorize;
 use zellij_tile::{
@@ -10,7 +10,7 @@ use zellij_tile::{
     ZellijPlugin,
 };
 
-use crate::{favs_mode::FavMode, FavSessionInfo, FAVS_PATH, FAVS_TEMPLATE};
+use crate::{favs_mode::FavMode, FavSessionInfo, FAVS_PATH_TMP, FAVS_TEMPLATE};
 
 pub struct Favs {
     fav_sessions: Vec<FavSessionInfo>,
@@ -22,13 +22,13 @@ pub struct Favs {
 
 impl Default for Favs {
     fn default() -> Self {
-        if !std::path::Path::new(FAVS_PATH).exists() {
-            let create = File::create(FAVS_PATH);
-            let mut file = create.unwrap();
-            file.write_all(FAVS_TEMPLATE.as_bytes()).unwrap();
-        }
-        let fav_sessions_json: Vec<String> =
-            serde_json::from_reader(File::open(FAVS_PATH).unwrap()).unwrap();
+        let fav_sessions_json: Vec<String> = if let Ok(favs) = fs::read_to_string(FAVS_PATH_TMP) {
+            serde_json::from_str(&favs).unwrap()
+        } else {
+            let favs = FAVS_TEMPLATE.to_string();
+            fs::write(FAVS_PATH_TMP, favs.clone()).unwrap();
+            serde_json::from_str(&favs).unwrap()
+        };
 
         Self {
             fav_sessions: fav_sessions_json
@@ -167,10 +167,8 @@ impl Favs {
             .iter()
             .map(|session| session.name.clone())
             .collect();
-
-        let mut file = File::create(FAVS_PATH).unwrap();
         let json = serde_json::to_string(&favs_to_save).unwrap();
-        file.write_all(json.as_bytes()).unwrap();
+        std::fs::write(FAVS_PATH_TMP, json.clone()).unwrap();
     }
 }
 
@@ -179,6 +177,7 @@ impl ZellijPlugin for Favs {
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
+            PermissionType::OpenFiles,
         ]);
         subscribe(&[
             EventType::Key,

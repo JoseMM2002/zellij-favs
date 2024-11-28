@@ -63,21 +63,60 @@ impl Favs {
                 }
             }
             _ => {
+                let flush_sessions: Vec<&FavSessionInfo> = self
+                    .flush_sessions
+                    .iter()
+                    .filter(|session| {
+                        if let Some(filter) = self.filter.clone() {
+                            session.name.to_lowercase().contains(&filter.to_lowercase())
+                        } else {
+                            true
+                        }
+                    })
+                    .collect();
+                let fav_sessions: Vec<&FavSessionInfo> = self
+                    .fav_sessions
+                    .iter()
+                    .filter(|session| {
+                        if let Some(filter) = self.filter.clone() {
+                            session.name.to_lowercase().contains(&filter.to_lowercase())
+                        } else {
+                            true
+                        }
+                    })
+                    .collect();
+
                 let arr_length = if self.mode == FavMode::NavigateFavs {
-                    self.fav_sessions.len()
+                    fav_sessions.len()
                 } else {
-                    self.flush_sessions.len()
+                    flush_sessions.len()
                 };
                 match key {
-                    BareKey::Char('j') => {
+                    BareKey::Char('h') | BareKey::Left => {
+                        self.mode = FavMode::NavigateFavs;
+                        self.cursor = if self.cursor < self.fav_sessions.len() {
+                            self.cursor
+                        } else {
+                            self.fav_sessions.len() - 1
+                        };
+                    }
+                    BareKey::Char('j') | BareKey::Down => {
                         if self.cursor + 1 < arr_length {
                             self.cursor += 1;
                         }
                     }
-                    BareKey::Char('k') => {
+                    BareKey::Char('k') | BareKey::Up => {
                         if self.cursor > 0 {
                             self.cursor -= 1;
                         }
+                    }
+                    BareKey::Char('l') | BareKey::Right => {
+                        self.mode = FavMode::NavigateFlush;
+                        self.cursor = if self.cursor < self.flush_sessions.len() {
+                            self.cursor
+                        } else {
+                            self.flush_sessions.len() - 1
+                        };
                     }
                     BareKey::Char('f') => {
                         let sessions_to_delete: Vec<String> = self
@@ -102,18 +141,6 @@ impl Favs {
                     }
                     BareKey::Char(' ') => {
                         if self.mode == FavMode::NavigateFavs {
-                            let fav_sessions: Vec<&FavSessionInfo> = self
-                                .fav_sessions
-                                .iter()
-                                .filter(|session| {
-                                    if let Some(filter) = self.filter.clone() {
-                                        session.name.to_lowercase().contains(&filter.to_lowercase())
-                                    } else {
-                                        true
-                                    }
-                                })
-                                .collect();
-
                             if fav_sessions.len() == 0 {
                                 return false;
                             }
@@ -132,18 +159,6 @@ impl Favs {
                                 self.cursor -= 1;
                             }
                         } else {
-                            let flush_sessions: Vec<&FavSessionInfo> = self
-                                .flush_sessions
-                                .iter()
-                                .filter(|session| {
-                                    if let Some(filter) = self.filter.clone() {
-                                        session.name.to_lowercase().contains(&filter.to_lowercase())
-                                    } else {
-                                        true
-                                    }
-                                })
-                                .collect();
-
                             if flush_sessions.len() == 0 {
                                 return false;
                             }

@@ -71,6 +71,8 @@ bind "Ctrl {char}" {
 - [x] Make a plugin that allows users to manage their favorite sessions in Zellij.
 - [x] Keep the plugin data available and synchronized on multiple terminal sessions.
 - [ ] Keep the plugin data after reboot
+- [ ] Add a configuration file to customize the plugin behavior.
+- [ ] Add pane to show plugin commands and keybinds.
 
 # Contributing
 

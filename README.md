@@ -35,7 +35,8 @@ A simple and intuitive plugin for managing favorite sessions in Zellij. With zel
 
 1. Install the plugin using the following command:
 
-```sh mkdir -p ~/.config/zellij/plugins && \
+```sh
+mkdir -p ~/.config/zellij/plugins && \
 curl -L https://github.com/JoseMM2002/zellij-favs/releases/download/Latest/zellij-favs.wasm -o ~/.config/zellij/plugins/zellij-favs.wasm
 ```
 

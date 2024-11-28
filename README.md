@@ -41,7 +41,8 @@ curl -L https://github.com/JoseMM2002/zellij-favs/releases/download/Latest/zelli
 
 2. Add the following keybind to your Zellij (configuration)[https://zellij.dev/documentation/configuration.html] file:
 
-```kdl shared_except "locked" {
+```kdl
+shared_except "locked" {
     bind "Ctrl {char}" {
         LaunchOrFocusPlugin "file:~/.config/zellij/plugins/zellij-favs.wasm" {
             floating true

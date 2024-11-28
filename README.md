@@ -30,3 +30,36 @@ A simple and intuitive plugin for managing favorite sessions in Zellij. With zel
 
 - Close panel plugin:
   Press Esc to exit the plugin
+
+# Installation
+
+1. Install the plugin using the following command:
+
+```sh mkdir -p ~/.config/zellij/plugins && \
+curl -L https://github.com/JoseMM2002/zellij-favs/releases/download/Latest/zellij-favs.wasm -o ~/.config/zellij/plugins/zellij-favs.wasm
+```
+
+2. Add the following keybind to your Zellij (configuration)[https://zellij.dev/documentation/configuration.html] file:
+
+```kdl shared_except "locked" {
+    bind "Ctrl {char}" {
+        LaunchOrFocusPlugin "file:~/.config/zellij/plugins/zellij-favs.wasm" {
+            floating true
+            ignore_case true
+            quick_jump true
+        }
+    }
+}
+```
+
+# Goals
+
+[x] Make a plugin that allows users to manage their favorite sessions in Zellij.
+[x] Keep the plugin data available and synchronized on multiple terminal sessions.
+[] Keep the plugin data after reboot
+
+# Contributing
+
+If you have any ideas, feel free to open an issue or a pull request.
+This is my first project in Rust, so any feedback is welcome.
+Thank you for your support!

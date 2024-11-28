@@ -56,9 +56,9 @@ shared_except "locked" {
 
 # Goals
 
-[] Make a plugin that allows users to manage their favorite sessions in Zellij.
-[] Keep the plugin data available and synchronized on multiple terminal sessions.
-[] Keep the plugin data after reboot
+- [] Make a plugin that allows users to manage their favorite sessions in Zellij.
+- [] Keep the plugin data available and synchronized on multiple terminal sessions.
+- [] Keep the plugin data after reboot
 
 # Contributing
 

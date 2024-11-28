@@ -39,7 +39,7 @@ A simple and intuitive plugin for managing favorite sessions in Zellij. With zel
 curl -L https://github.com/JoseMM2002/zellij-favs/releases/download/Latest/zellij-favs.wasm -o ~/.config/zellij/plugins/zellij-favs.wasm
 ```
 
-2. Add the following keybind to your Zellij (configuration)[https://zellij.dev/documentation/configuration.html] file:
+2. Add the following keybind to your Zellij [configuration](https://zellij.dev/documentation/configuration.html) file:
 
 ```kdl
 shared_except "locked" {

@@ -54,6 +54,18 @@ shared_except "locked" {
 }
 ```
 
+## Alternatively, you can use the following configuration:
+
+```kdl
+bind "Ctrl {char}" {
+    LaunchOrFocusPlugin "https://github.com/JoseMM2002/zellij-favs/releases/download/Latest/zellij-favs.wasm" {
+        floating true
+        ignore_case true
+        quick_jump true
+    }
+}
+```
+
 # Goals
 
 - [x] Make a plugin that allows users to manage their favorite sessions in Zellij.

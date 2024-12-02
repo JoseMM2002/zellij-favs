@@ -41,8 +41,7 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
             };
         }
         BareKey::Char('f') => {
-            let sessions_to_delete: Vec<String> = ctx
-                .flush_sessions
+            let sessions_to_delete: Vec<String> = flush_sessions
                 .iter()
                 .filter(|session| session.is_active)
                 .map(|session| session.name.clone())
@@ -50,11 +49,16 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
 
             kill_sessions(&sessions_to_delete);
 
-            for session in ctx.flush_sessions.iter() {
+            for session in flush_sessions.iter().filter(|session| session.is_active) {
                 delete_dead_session(&session.name);
             }
 
-            ctx.flush_sessions = vec![];
+            ctx.flush_sessions.retain(|session| {
+                flush_sessions
+                    .iter()
+                    .find(|s| s.name == session.name)
+                    .is_none()
+            });
             ctx.commit_fav_changes();
         }
         BareKey::Char('/') => {

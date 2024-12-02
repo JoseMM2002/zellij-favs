@@ -58,6 +58,10 @@ impl Favs {
                             self.mode = FavMode::NavigateFlush;
                             self.cursor = 0;
                         }
+                        BareKey::Esc => {
+                            self.filter = None;
+                            self.mode = FavMode::NavigateFavs;
+                        }
                         _ => return false,
                     }
                 }
@@ -94,10 +98,10 @@ impl Favs {
                 match key {
                     BareKey::Char('h') | BareKey::Left => {
                         self.mode = FavMode::NavigateFavs;
-                        self.cursor = if self.cursor < self.fav_sessions.len() {
+                        self.cursor = if self.cursor < fav_sessions.len() {
                             self.cursor
                         } else {
-                            self.fav_sessions.len() - 1
+                            fav_sessions.len() - 1
                         };
                     }
                     BareKey::Char('j') | BareKey::Down => {
@@ -112,10 +116,10 @@ impl Favs {
                     }
                     BareKey::Char('l') | BareKey::Right => {
                         self.mode = FavMode::NavigateFlush;
-                        self.cursor = if self.cursor < self.flush_sessions.len() {
+                        self.cursor = if self.cursor < flush_sessions.len() {
                             self.cursor
                         } else {
-                            self.flush_sessions.len() - 1
+                            flush_sessions.len() - 1
                         };
                     }
                     BareKey::Char('f') => {
@@ -141,7 +145,7 @@ impl Favs {
                     }
                     BareKey::Char(' ') => {
                         if self.mode == FavMode::NavigateFavs {
-                            if fav_sessions.len() == 0 {
+                            if fav_sessions.is_empty() {
                                 return false;
                             }
 
@@ -154,12 +158,13 @@ impl Favs {
 
                             self.fav_sessions.remove(session_idx);
                             self.flush_sessions.push(session);
-                            if self.cursor == self.fav_sessions.len() && self.fav_sessions.len() > 0
+                            if self.cursor == self.fav_sessions.len()
+                                && !self.fav_sessions.is_empty()
                             {
                                 self.cursor -= 1;
                             }
                         } else {
-                            if flush_sessions.len() == 0 {
+                            if flush_sessions.is_empty() {
                                 return false;
                             }
 
@@ -173,7 +178,7 @@ impl Favs {
                             self.flush_sessions.remove(session_idx);
                             self.fav_sessions.push(session);
                             if self.cursor == self.flush_sessions.len()
-                                && self.flush_sessions.len() > 0
+                                && !self.flush_sessions.is_empty()
                             {
                                 self.cursor -= 1;
                             }

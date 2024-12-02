@@ -3,15 +3,13 @@ use std::{fs::File, io::Write};
 use owo_colors::OwoColorize;
 use zellij_tile::{
     prelude::*,
-    shim::{
-        delete_dead_session, kill_sessions, print_text_with_coordinates, request_permission,
-        subscribe, switch_session, Text,
-    },
+    shim::{print_text_with_coordinates, request_permission, subscribe, Text},
     ZellijPlugin,
 };
 
 use crate::{
-    favs_mode::FavMode, filter::match_filter_key, FavSessionInfo, FAVS_PATH_TMP, FAVS_TEMPLATE,
+    favs_mode::FavMode, filter::match_filter_key, navigate::match_navigation_keys, FavSessionInfo,
+    FAVS_PATH_TMP, FAVS_TEMPLATE,
 };
 
 pub struct Favs {
@@ -43,157 +41,11 @@ impl Default for Favs {
 impl Favs {
     fn match_key(&mut self, key: &BareKey) -> bool {
         match &mut self.mode {
-            FavMode::Filter => {
-                match_filter_key(self, key);
-            }
-            _ => {
-                let flush_sessions: Vec<&FavSessionInfo> = self
-                    .flush_sessions
-                    .iter()
-                    .filter(|session| {
-                        if let Some(filter) = self.filter.clone() {
-                            session.name.to_lowercase().contains(&filter.to_lowercase())
-                        } else {
-                            true
-                        }
-                    })
-                    .collect();
-                let fav_sessions: Vec<&FavSessionInfo> = self
-                    .fav_sessions
-                    .iter()
-                    .filter(|session| {
-                        if let Some(filter) = self.filter.clone() {
-                            session.name.to_lowercase().contains(&filter.to_lowercase())
-                        } else {
-                            true
-                        }
-                    })
-                    .collect();
-
-                let arr_length = if self.mode == FavMode::NavigateFavs {
-                    fav_sessions.len()
-                } else {
-                    flush_sessions.len()
-                };
-                match key {
-                    BareKey::Char('h') | BareKey::Left => {
-                        self.mode = FavMode::NavigateFavs;
-                        self.cursor = if self.cursor < fav_sessions.len() {
-                            self.cursor
-                        } else {
-                            fav_sessions.len() - 1
-                        };
-                    }
-                    BareKey::Char('j') | BareKey::Down => {
-                        if self.cursor + 1 < arr_length {
-                            self.cursor += 1;
-                        }
-                    }
-                    BareKey::Char('k') | BareKey::Up => {
-                        if self.cursor > 0 {
-                            self.cursor -= 1;
-                        }
-                    }
-                    BareKey::Char('l') | BareKey::Right => {
-                        self.mode = FavMode::NavigateFlush;
-                        self.cursor = if self.cursor < flush_sessions.len() {
-                            self.cursor
-                        } else {
-                            flush_sessions.len() - 1
-                        };
-                    }
-                    BareKey::Char('f') => {
-                        let sessions_to_delete: Vec<String> = self
-                            .flush_sessions
-                            .iter()
-                            .filter(|session| session.is_active)
-                            .map(|session| session.name.clone())
-                            .collect();
-
-                        kill_sessions(&sessions_to_delete);
-
-                        for session in self.flush_sessions.iter() {
-                            delete_dead_session(&session.name);
-                        }
-
-                        self.flush_sessions = vec![];
-                        self.commit_fav_changes();
-                    }
-                    BareKey::Char('/') => {
-                        self.mode = FavMode::Filter;
-                        self.filter = Some(String::new());
-                    }
-                    BareKey::Char(' ') => {
-                        if self.mode == FavMode::NavigateFavs {
-                            if fav_sessions.is_empty() {
-                                return false;
-                            }
-
-                            let session = fav_sessions[self.cursor].clone();
-                            let session_idx = self
-                                .fav_sessions
-                                .iter()
-                                .position(|s| s.name == session.name)
-                                .unwrap();
-
-                            self.fav_sessions.remove(session_idx);
-                            self.flush_sessions.push(session);
-                            if self.cursor == self.fav_sessions.len()
-                                && !self.fav_sessions.is_empty()
-                            {
-                                self.cursor -= 1;
-                            }
-                        } else {
-                            if flush_sessions.is_empty() {
-                                return false;
-                            }
-
-                            let session = flush_sessions[self.cursor].clone();
-                            let session_idx = self
-                                .flush_sessions
-                                .iter()
-                                .position(|s| s.name == session.name)
-                                .unwrap();
-
-                            self.flush_sessions.remove(session_idx);
-                            self.fav_sessions.push(session);
-                            if self.cursor == self.flush_sessions.len()
-                                && !self.flush_sessions.is_empty()
-                            {
-                                self.cursor -= 1;
-                            }
-                        }
-                        self.commit_fav_changes();
-                    }
-                    BareKey::Tab => {
-                        if self.mode == FavMode::NavigateFavs {
-                            self.mode = FavMode::NavigateFlush;
-                            self.cursor = self.cursor.min(self.flush_sessions.len());
-                        } else {
-                            self.mode = FavMode::NavigateFavs;
-                            self.cursor = self.cursor.min(self.fav_sessions.len());
-                        }
-                        self.cursor = 0;
-                    }
-                    BareKey::Enter => {
-                        let session = if self.mode == FavMode::NavigateFavs {
-                            self.fav_sessions[self.cursor].clone()
-                        } else {
-                            self.flush_sessions[self.cursor].clone()
-                        };
-                        switch_session(Some(session.name.as_str()));
-                        close_self();
-                    }
-                    BareKey::Esc => {
-                        close_self();
-                    }
-                    _ => return false,
-                };
-            }
+            FavMode::Filter => match_filter_key(self, key),
+            _ => match_navigation_keys(self, key),
         }
-        true
     }
-    fn commit_fav_changes(&self) {
+    pub fn commit_fav_changes(&self) {
         let favs_to_save: Vec<String> = self
             .fav_sessions
             .iter()
@@ -203,6 +55,33 @@ impl Favs {
 
         let mut file = File::create(FAVS_PATH_TMP).unwrap();
         file.write_all(json.as_bytes()).unwrap();
+    }
+    pub fn get_filtered_sessions(&self) -> (Vec<FavSessionInfo>, Vec<FavSessionInfo>) {
+        let flush_sessions: Vec<FavSessionInfo> = self
+            .flush_sessions
+            .iter()
+            .filter(|session| {
+                if let Some(filter) = self.filter.clone() {
+                    session.name.to_lowercase().contains(&filter.to_lowercase())
+                } else {
+                    true
+                }
+            })
+            .cloned()
+            .collect();
+        let fav_sessions: Vec<FavSessionInfo> = self
+            .fav_sessions
+            .iter()
+            .filter(|session| {
+                if let Some(filter) = self.filter.clone() {
+                    session.name.to_lowercase().contains(&filter.to_lowercase())
+                } else {
+                    true
+                }
+            })
+            .cloned()
+            .collect();
+        (fav_sessions, flush_sessions)
     }
 }
 

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod favs;
 pub mod favs_mode;
+pub mod filter;
 
 pub const FAVS_TEMPLATE: &str = r#"[]"#;
 pub const FAVS_PATH_CACHE: &str = "/cache/favs.json";

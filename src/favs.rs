@@ -10,14 +10,16 @@ use zellij_tile::{
     ZellijPlugin,
 };
 
-use crate::{favs_mode::FavMode, FavSessionInfo, FAVS_PATH_TMP, FAVS_TEMPLATE};
+use crate::{
+    favs_mode::FavMode, filter::match_filter_key, FavSessionInfo, FAVS_PATH_TMP, FAVS_TEMPLATE,
+};
 
 pub struct Favs {
-    fav_sessions: Vec<FavSessionInfo>,
-    flush_sessions: Vec<FavSessionInfo>,
-    cursor: usize,
-    mode: FavMode,
-    filter: Option<String>,
+    pub fav_sessions: Vec<FavSessionInfo>,
+    pub flush_sessions: Vec<FavSessionInfo>,
+    pub cursor: usize,
+    pub mode: FavMode,
+    pub filter: Option<String>,
 }
 
 impl Default for Favs {
@@ -42,29 +44,7 @@ impl Favs {
     fn match_key(&mut self, key: &BareKey) -> bool {
         match &mut self.mode {
             FavMode::Filter => {
-                if let Some(filter) = self.filter.as_mut() {
-                    match key {
-                        BareKey::Char(char) => {
-                            filter.push(*char);
-                        }
-                        BareKey::Backspace => {
-                            filter.pop();
-                        }
-                        BareKey::Enter | BareKey::Left => {
-                            self.mode = FavMode::NavigateFavs;
-                            self.cursor = 0;
-                        }
-                        BareKey::Right => {
-                            self.mode = FavMode::NavigateFlush;
-                            self.cursor = 0;
-                        }
-                        BareKey::Esc => {
-                            self.filter = None;
-                            self.mode = FavMode::NavigateFavs;
-                        }
-                        _ => return false,
-                    }
-                }
+                match_filter_key(self, key);
             }
             _ => {
                 let flush_sessions: Vec<&FavSessionInfo> = self

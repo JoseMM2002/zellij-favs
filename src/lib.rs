@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 pub mod favs;
 pub mod favs_mode;
 pub mod filter;
+pub mod navigate;
 
 pub const FAVS_TEMPLATE: &str = r#"[]"#;
 pub const FAVS_PATH_CACHE: &str = "/cache/favs.json";
@@ -15,10 +16,4 @@ pub const FAVS_SYNC_MESSAGE_NAME: &str = "favs_sync";
 pub struct FavSessionInfo {
     name: String,
     is_active: bool,
-}
-
-#[derive(Default, Clone, Serialize, Deserialize)]
-pub struct SyncMessage {
-    pub favs: Vec<FavSessionInfo>,
-    pub flush: Vec<FavSessionInfo>,
 }

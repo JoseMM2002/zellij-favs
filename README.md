@@ -2,6 +2,8 @@
 
 A simple and intuitive plugin for managing favorite sessions in Zellij. With zellij-favs, you can keep your favorite sessions organized and easily flush away the unwanted ones.
 
+![Preview](pictures/PREVIEW.jpeg)
+
 # Features
 
 - Filter Sessions: Use / to filter through your sessions quickly.
@@ -30,6 +32,8 @@ A simple and intuitive plugin for managing favorite sessions in Zellij. With zel
 
 - Close panel plugin:
   Press Esc to exit the plugin
+
+![help](pictures/HELP_COMMANDS.jpeg)
 
 # Installation
 

@@ -30,6 +30,8 @@ impl FavMode {
                 ("<Tab>", "Navigate Flush/Favorites items"),
                 ("↑k | ↓j", "Move cursor"),
                 ("/", "Filter"),
+                ("?", "Help"),
+                ("<Esc> | 'q'", "Close"),
             ],
             FavMode::Help => vec![("<Esc> | 'q'", "Close help"), ("↑k | ↓j", "Move cursor")],
         }

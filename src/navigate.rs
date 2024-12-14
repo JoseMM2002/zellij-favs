@@ -19,7 +19,7 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
             ctx.cursor = if ctx.cursor < fav_sessions.len() {
                 ctx.cursor
             } else {
-                fav_sessions.len() - 1
+                fav_sessions.len().saturating_sub(1)
             };
         }
         BareKey::Char('j') | BareKey::Down => {
@@ -37,7 +37,7 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
             ctx.cursor = if ctx.cursor < flush_sessions.len() {
                 ctx.cursor
             } else {
-                flush_sessions.len() - 1
+                flush_sessions.len().saturating_sub(1)
             };
         }
         BareKey::Char('f') => {
@@ -53,12 +53,8 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
                 delete_dead_session(&session.name);
             }
 
-            ctx.flush_sessions.retain(|session| {
-                flush_sessions
-                    .iter()
-                    .find(|s| s.name == session.name)
-                    .is_none()
-            });
+            ctx.flush_sessions
+                .retain(|session| flush_sessions.iter().any(|s| s.name == session.name));
             ctx.commit_fav_changes();
         }
         BareKey::Char('/') => {

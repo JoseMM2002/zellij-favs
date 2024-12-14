@@ -106,6 +106,13 @@ impl Favs {
 
         print_text_with_coordinates(Text::new(favs_title), 0, 1, None, None);
 
+        let sessions_space = rows.saturating_sub(3);
+        let skip = if self.cursor > sessions_space.saturating_sub(1) {
+            self.cursor.saturating_sub(sessions_space.saturating_sub(1))
+        } else {
+            0
+        };
+
         for (i, session) in self
             .fav_sessions
             .iter()
@@ -116,9 +123,20 @@ impl Favs {
                     true
                 }
             })
+            .skip({
+                if self.mode == FavMode::NavigateFavs {
+                    skip
+                } else {
+                    0
+                }
+            })
             .enumerate()
         {
-            let text = if self.mode == FavMode::NavigateFavs && self.cursor == i {
+            if i >= sessions_space {
+                break;
+            }
+            let selected_idx = self.cursor.min(sessions_space - 1);
+            let text = if self.mode == FavMode::NavigateFavs && selected_idx == i {
                 let selected = format!("{} {}", ">".cyan(), session.name.clone());
                 Text::new(selected).selected()
             } else {
@@ -145,9 +163,20 @@ impl Favs {
                     true
                 }
             })
+            .skip({
+                if self.mode == FavMode::NavigateFlush {
+                    skip
+                } else {
+                    0
+                }
+            })
             .enumerate()
         {
-            let text = if self.mode == FavMode::NavigateFlush && self.cursor == i {
+            if i >= sessions_space {
+                break;
+            }
+            let selected_idx = self.cursor.min(sessions_space - 1);
+            let text = if self.mode == FavMode::NavigateFlush && selected_idx == i {
                 let selected = format!("{} {}", ">".cyan(), session.name.clone());
                 Text::new(selected).selected()
             } else {

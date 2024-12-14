@@ -15,7 +15,7 @@ pub fn match_filter_key(ctx: &mut Favs, key: &BareKey) -> bool {
                 ctx.mode = FavMode::NavigateFavs;
                 ctx.cursor = 0;
             }
-            BareKey::Right => {
+            BareKey::Right | BareKey::Tab => {
                 ctx.mode = FavMode::NavigateFlush;
                 ctx.cursor = 0;
             }

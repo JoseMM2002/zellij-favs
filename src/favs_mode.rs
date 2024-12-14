@@ -16,7 +16,7 @@ impl FavMode {
         match self {
             FavMode::Filter => {
                 vec![
-                    ("<Enter>", "Use filter"),
+                    ("<Enter> | <Tab>", "Use filter"),
                     ("<Esc>", "Close filter"),
                     ("<Backspace>", "Delete last character"),
                     ("<Left>", "Go to Favs"),

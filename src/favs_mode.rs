@@ -31,7 +31,7 @@ impl FavMode {
                 ("↑k | ↓j", "Move cursor"),
                 ("/", "Filter"),
             ],
-            FavMode::Help => vec![("<Esc>", "Close help"), ("↑k | ↓j", "Move cursor")],
+            FavMode::Help => vec![("<Esc> | 'q'", "Close help"), ("↑k | ↓j", "Move cursor")],
         }
     }
     pub fn variants() -> Vec<Self> {

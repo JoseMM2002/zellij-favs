@@ -1,4 +1,5 @@
-use owo_colors::OwoColorize;
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq)]
@@ -7,67 +8,56 @@ pub enum FavMode {
     NavigateFavs,
     NavigateFlush,
     Filter,
+    Help,
 }
 
 impl FavMode {
-    pub fn get_commands(self) -> Vec<String> {
+    pub fn get_commands(self) -> Vec<(&'static str, &'static str)> {
         match self {
             FavMode::Filter => {
                 vec![
-                    format!(
-                        "{} {}",
-                        "<Enter>".bold().purple(),
-                        "- Use filter".bold().yellow()
-                    ),
-                    format!(
-                        "{} {}",
-                        "<Left>".bold().purple(),
-                        "- Go to Favs".bold().yellow()
-                    ),
-                    format!(
-                        "{} {}",
-                        "<Right>".bold().purple(),
-                        "- Go to Flush".bold().yellow()
-                    ),
+                    ("<Enter>", "Use filter"),
+                    ("<Esc>", "Close filter"),
+                    ("<Backspace>", "Delete last character"),
+                    ("<Left>", "Go to Favs"),
+                    ("<Right>", "Go to Flush"),
+                    ("<Char>", "Type character to filter"),
                 ]
             }
-            FavMode::NavigateFavs => vec![
-                format!("{}", "↑k | ↓j".bold().purple(),),
-                format!(
-                    "{} {}",
-                    "<Enter>".bold().purple(),
-                    "- Open session".bold().yellow()
-                ),
-                format!(
-                    "{} {}",
-                    "<Space>".bold().purple(),
-                    "- Move session to Flush".bold().yellow()
-                ),
-                format!(
-                    "{} {}",
-                    "<Tab>".bold().purple(),
-                    "- Navigate Flush items".bold().yellow()
-                ),
-                format!("{} {}", "/".bold().purple(), " - Filter".bold().yellow()),
+            FavMode::NavigateFavs | FavMode::NavigateFlush => vec![
+                ("<Enter>", "Open session"),
+                ("<Space>", "Move session to Flush/Favorites"),
+                ("<Tab>", "Navigate Flush/Favorites items"),
+                ("↑k | ↓j", "Move cursor"),
+                ("/", "Filter"),
             ],
-            FavMode::NavigateFlush => vec![
-                format!(
-                    "{} {}",
-                    "<Enter>".bold().purple(),
-                    "- Open session".bold().yellow()
-                ),
-                format!(
-                    "{} {}",
-                    "<Space>".bold().purple(),
-                    "- Move session to Favs".bold().yellow()
-                ),
-                format!(
-                    "{} {}",
-                    "<Tab>".bold().purple(),
-                    "- Navigate Favs items".bold().yellow()
-                ),
-                format!("{} {}", "/".bold().purple(), "- Filter".bold().yellow()),
-            ],
+            FavMode::Help => vec![("<Esc>", "Close help"), ("↑k | ↓j", "Move cursor")],
+        }
+    }
+    pub fn variants() -> Vec<Self> {
+        vec![
+            FavMode::NavigateFavs,
+            FavMode::NavigateFlush,
+            FavMode::Filter,
+            FavMode::Help,
+        ]
+    }
+    pub fn total_commands() -> usize {
+        let modes = FavMode::variants();
+        let mut total = 0;
+        for mode in modes {
+            total += mode.get_commands().len();
+        }
+        total
+    }
+}
+
+impl Display for FavMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FavMode::NavigateFavs | FavMode::NavigateFlush => write!(f, "Navigate"),
+            FavMode::Filter => write!(f, "Filter"),
+            FavMode::Help => write!(f, "Help"),
         }
     }
 }

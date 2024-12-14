@@ -122,8 +122,11 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
             switch_session(Some(session.name.as_str()));
             close_self();
         }
-        BareKey::Esc => {
+        BareKey::Esc | BareKey::Char('q') => {
             close_self();
+        }
+        BareKey::Char('?') => {
+            ctx.mode = FavMode::Help;
         }
         _ => return false,
     };

@@ -8,8 +8,8 @@ use zellij_tile::{
 };
 
 use crate::{
-    favs_mode::FavMode, filter::match_filter_key, navigate::match_navigation_keys, FavSessionInfo,
-    FAVS_PATH_TMP, FAVS_TEMPLATE,
+    favs_mode::FavMode, filter::match_filter_key, help::match_help_keys,
+    navigate::match_navigation_keys, FavSessionInfo, FAVS_PATH_TMP, FAVS_TEMPLATE,
 };
 
 pub struct Favs {
@@ -42,6 +42,7 @@ impl Favs {
     fn match_key(&mut self, key: &BareKey) -> bool {
         match &mut self.mode {
             FavMode::Filter => match_filter_key(self, key),
+            FavMode::Help => match_help_keys(self, key),
             _ => match_navigation_keys(self, key),
         }
     }
@@ -83,79 +84,8 @@ impl Favs {
             .collect();
         (fav_sessions, flush_sessions)
     }
-}
 
-impl ZellijPlugin for Favs {
-    fn load(&mut self, _configuration: std::collections::BTreeMap<String, String>) {
-        request_permission(&[
-            PermissionType::ReadApplicationState,
-            PermissionType::ChangeApplicationState,
-            PermissionType::MessageAndLaunchOtherPlugins,
-        ]);
-        subscribe(&[
-            EventType::Key,
-            EventType::SessionUpdate,
-            EventType::CustomMessage,
-        ]);
-    }
-
-    fn update(&mut self, event: zellij_tile::prelude::Event) -> bool {
-        let mut render = false;
-        match event {
-            Event::Key(key) => {
-                render = self.match_key(&key.bare_key);
-            }
-            Event::SessionUpdate(sessions_info, resurrectable_session_list) => {
-                let mut current_sessions: Vec<FavSessionInfo> = sessions_info
-                    .iter()
-                    .map(|session_info| FavSessionInfo {
-                        name: session_info.name.clone(),
-                        is_active: true,
-                    })
-                    .collect();
-
-                current_sessions.extend(resurrectable_session_list.iter().map(|session_info| {
-                    FavSessionInfo {
-                        name: session_info.0.clone(),
-                        is_active: false,
-                    }
-                }));
-
-                let fav_sessions_json: Vec<String> =
-                    serde_json::from_reader(File::open(FAVS_PATH_TMP).unwrap()).unwrap();
-
-                eprintln!("fav_sessions_json: {:?}", fav_sessions_json);
-
-                let (fav_sessions, flush_sessions): (Vec<FavSessionInfo>, Vec<FavSessionInfo>) =
-                    current_sessions
-                        .iter()
-                        .cloned()
-                        .partition(|current| fav_sessions_json.contains(&current.name));
-
-                self.fav_sessions = fav_sessions;
-                self.flush_sessions = flush_sessions;
-
-                match self.mode {
-                    FavMode::NavigateFavs => {
-                        self.cursor = self.cursor.min(self.fav_sessions.len());
-                    }
-                    FavMode::NavigateFlush => {
-                        self.cursor = self.cursor.min(self.flush_sessions.len());
-                    }
-                    FavMode::Filter => {}
-                }
-
-                self.commit_fav_changes();
-
-                render = true;
-            }
-            _ => {}
-        }
-
-        render
-    }
-
-    fn render(&mut self, _rows: usize, cols: usize) {
+    pub fn render_navigation(&self, cols: usize, rows: usize) {
         let half_cols = cols / 2;
 
         println!(
@@ -224,6 +154,107 @@ impl ZellijPlugin for Favs {
                 Text::new(session.name.clone())
             };
             print_text_with_coordinates(text, half_cols, 2 + i, None, None);
+        }
+
+        if self.mode == FavMode::Filter {
+            return;
+        }
+
+        let help_text = format!("{}", "Press '?' for help".dimmed().italic());
+        print_text_with_coordinates(Text::new(help_text), 0, rows - 1, None, None);
+    }
+    pub fn render_help_commands(&self) {
+        let modes = FavMode::variants();
+        for mode in modes.iter() {
+            if mode == &FavMode::NavigateFlush {
+                continue;
+            }
+            println!("{}", mode.clone().dimmed().italic().red());
+            let commands = mode.clone().get_commands();
+
+            for command in commands.iter() {
+                println!("{} - {}", command.0.purple(), command.1);
+            }
+        }
+    }
+}
+
+impl ZellijPlugin for Favs {
+    fn load(&mut self, _configuration: std::collections::BTreeMap<String, String>) {
+        request_permission(&[
+            PermissionType::ReadApplicationState,
+            PermissionType::ChangeApplicationState,
+            PermissionType::MessageAndLaunchOtherPlugins,
+        ]);
+        subscribe(&[
+            EventType::Key,
+            EventType::SessionUpdate,
+            EventType::CustomMessage,
+        ]);
+    }
+
+    fn update(&mut self, event: zellij_tile::prelude::Event) -> bool {
+        let mut render = false;
+        match event {
+            Event::Key(key) => {
+                render = self.match_key(&key.bare_key);
+            }
+            Event::SessionUpdate(sessions_info, resurrectable_session_list) => {
+                let mut current_sessions: Vec<FavSessionInfo> = sessions_info
+                    .iter()
+                    .map(|session_info| FavSessionInfo {
+                        name: session_info.name.clone(),
+                        is_active: true,
+                    })
+                    .collect();
+
+                current_sessions.extend(resurrectable_session_list.iter().map(|session_info| {
+                    FavSessionInfo {
+                        name: session_info.0.clone(),
+                        is_active: false,
+                    }
+                }));
+
+                let fav_sessions_json: Vec<String> =
+                    serde_json::from_reader(File::open(FAVS_PATH_TMP).unwrap()).unwrap();
+
+                eprintln!("fav_sessions_json: {:?}", fav_sessions_json);
+
+                let (fav_sessions, flush_sessions): (Vec<FavSessionInfo>, Vec<FavSessionInfo>) =
+                    current_sessions
+                        .iter()
+                        .cloned()
+                        .partition(|current| fav_sessions_json.contains(&current.name));
+
+                self.fav_sessions = fav_sessions;
+                self.flush_sessions = flush_sessions;
+
+                match self.mode {
+                    FavMode::NavigateFavs => {
+                        self.cursor = self.cursor.min(self.fav_sessions.len());
+                    }
+                    FavMode::NavigateFlush => {
+                        self.cursor = self.cursor.min(self.flush_sessions.len());
+                    }
+                    _ => {}
+                }
+
+                self.commit_fav_changes();
+
+                render = true;
+            }
+            _ => {}
+        }
+
+        render
+    }
+
+    fn render(&mut self, rows: usize, cols: usize) {
+        match self.mode {
+            FavMode::Help => {
+                self.render_help_commands();
+            }
+            _ => self.render_navigation(cols, rows),
         }
     }
 }

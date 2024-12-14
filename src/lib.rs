@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 pub mod favs;
 pub mod favs_mode;
 pub mod filter;
+pub mod help;
 pub mod navigate;
 
 pub const FAVS_TEMPLATE: &str = r#"[]"#;

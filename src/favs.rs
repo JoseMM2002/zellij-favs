@@ -202,7 +202,7 @@ impl Favs {
             let commands = mode.clone().get_commands();
 
             for command in commands.iter() {
-                println!("{} - {}", command.0.purple(), command.1);
+                println!("  {} - {}", command.0.purple(), command.1);
             }
         }
     }

@@ -111,9 +111,9 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
         }
         BareKey::Enter => {
             let session = if ctx.mode == FavMode::NavigateFavs {
-                ctx.fav_sessions[ctx.cursor].clone()
+                fav_sessions[ctx.cursor].clone()
             } else {
-                ctx.flush_sessions[ctx.cursor].clone()
+                flush_sessions[ctx.cursor].clone()
             };
             switch_session(Some(session.name.as_str()));
             close_self();

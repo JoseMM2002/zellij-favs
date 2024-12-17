@@ -49,7 +49,7 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
 
             kill_sessions(&sessions_to_delete);
 
-            for session in flush_sessions.iter().filter(|session| !session.is_active) {
+            for session in flush_sessions.iter() {
                 delete_dead_session(&session.name);
             }
 

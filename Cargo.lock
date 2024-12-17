@@ -3402,7 +3402,7 @@ dependencies = [
 
 [[package]]
 name = "zellij-favs"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "owo-colors",
  "serde",

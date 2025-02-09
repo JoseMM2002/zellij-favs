@@ -41,7 +41,7 @@ A simple and intuitive plugin for managing favorite sessions in Zellij. With zel
 
 ```sh
 mkdir -p ~/.config/zellij/plugins && \
-curl -L https://github.com/JoseMM2002/zellij-favs/releases/download/Latest/zellij-favs.wasm -o ~/.config/zellij/plugins/zellij-favs.wasm
+curl -L https://github.com/JoseMM2002/zellij-favs/releases/download/v0.1.8/zellij-favs.wasm -o ~/.config/zellij/plugins/zellij-favs.wasm
 ```
 
 2. Add the following keybind to your Zellij [configuration](https://zellij.dev/documentation/configuration.html) file:
@@ -62,7 +62,7 @@ shared_except "locked" {
 
 ```kdl
 bind "Ctrl {char}" {
-    LaunchOrFocusPlugin "https://github.com/JoseMM2002/zellij-favs/releases/download/Latest/zellij-favs.wasm" {
+    LaunchOrFocusPlugin "https://github.com/JoseMM2002/zellij-favs/releases/download/v0.1.8/zellij-favs.wasm" {
         floating true
         ignore_case true
         quick_jump true

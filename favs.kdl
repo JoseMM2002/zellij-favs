@@ -5,7 +5,7 @@ layout {
             args "-c" "cargo build && zellij action start-or-reload-plugin file:target/wasm32-wasi/debug/zellij-favs.wasm"
         }
         pane {
-            plugin location="file:target/wasm32-wasi/debug/zellij-favs.wasm"
+            plugin location="file:target/wasm32-wasip1/debug/zellij-favs.wasm"
         }
     }
 }

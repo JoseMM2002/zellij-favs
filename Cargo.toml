@@ -1,6 +1,6 @@
 [package]
 name = "zellij-favs"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["JoseMM2002 <jeolmmt@gmail.com>"]
 edition = "2021"
 

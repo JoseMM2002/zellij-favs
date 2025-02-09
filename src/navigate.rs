@@ -1,6 +1,6 @@
 use zellij_tile::{
     prelude::BareKey,
-    shim::{close_self, delete_dead_session, kill_sessions, switch_session},
+    shim::{close_focus, close_self, delete_dead_session, kill_sessions, switch_session},
 };
 
 use crate::{favs::Favs, favs_mode::FavMode};
@@ -110,13 +110,13 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
             ctx.cursor = 0;
         }
         BareKey::Enter => {
+            close_focus();
             let session = if ctx.mode == FavMode::NavigateFavs {
                 fav_sessions[ctx.cursor].clone()
             } else {
                 flush_sessions[ctx.cursor].clone()
             };
             switch_session(Some(session.name.as_str()));
-            close_self();
         }
         BareKey::Esc | BareKey::Char('q') => {
             close_self();

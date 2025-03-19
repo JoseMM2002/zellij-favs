@@ -213,13 +213,8 @@ impl ZellijPlugin for Favs {
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
-            PermissionType::MessageAndLaunchOtherPlugins,
         ]);
-        subscribe(&[
-            EventType::Key,
-            EventType::SessionUpdate,
-            EventType::CustomMessage,
-        ]);
+        subscribe(&[EventType::Key, EventType::SessionUpdate]);
     }
 
     fn update(&mut self, event: zellij_tile::prelude::Event) -> bool {

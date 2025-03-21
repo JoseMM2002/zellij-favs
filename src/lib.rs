@@ -10,6 +10,7 @@ pub const FAVS_TEMPLATE: &str = r#"[]"#;
 pub const FAVS_PATH_CACHE: &str = "/cache/favs.json";
 pub const FAVS_PATH_TMP: &str = "/tmp/favs.json";
 pub const FAVS_PATH_DATA: &str = "/data/favs.json";
+pub const FAVS_PATH_HOST: &str = "/host/favs.json";
 
 pub const FAVS_SYNC_MESSAGE_NAME: &str = "favs_sync";
 
@@ -17,4 +18,12 @@ pub const FAVS_SYNC_MESSAGE_NAME: &str = "favs_sync";
 pub struct FavSessionInfo {
     name: String,
     is_active: bool,
+}
+
+pub fn get_fav_path(has_data_dir: bool) -> &'static str {
+    if has_data_dir {
+        FAVS_PATH_HOST
+    } else {
+        FAVS_PATH_TMP
+    }
 }

@@ -1,4 +1,4 @@
-use std::{fs::File, io::Write};
+use std::{fs::File, io::Write, path::PathBuf};
 
 use owo_colors::OwoColorize;
 use zellij_tile::{
@@ -8,8 +8,8 @@ use zellij_tile::{
 };
 
 use crate::{
-    favs_mode::FavMode, filter::match_filter_key, help::match_help_keys,
-    navigate::match_navigation_keys, FavSessionInfo, FAVS_PATH_TMP, FAVS_TEMPLATE,
+    favs_mode::FavMode, filter::match_filter_key, get_fav_path, help::match_help_keys,
+    navigate::match_navigation_keys, FavSessionInfo, FAVS_TEMPLATE,
 };
 
 pub struct Favs {
@@ -18,22 +18,18 @@ pub struct Favs {
     pub cursor: usize,
     pub mode: FavMode,
     pub filter: Option<String>,
+    pub has_data_dir: bool,
 }
 
 impl Default for Favs {
     fn default() -> Self {
-        if !std::path::Path::new(FAVS_PATH_TMP).exists() {
-            let create = File::create(FAVS_PATH_TMP);
-            let mut file = create.unwrap();
-            file.write_all(FAVS_TEMPLATE.as_bytes()).unwrap();
-        }
-
         Self {
             fav_sessions: vec![],
             cursor: 0,
             mode: FavMode::NavigateFavs,
             filter: None,
             flush_sessions: vec![],
+            has_data_dir: false,
         }
     }
 }
@@ -54,7 +50,7 @@ impl Favs {
             .collect();
         let json = serde_json::to_string(&favs_to_save).unwrap();
 
-        let mut file = File::create(FAVS_PATH_TMP).unwrap();
+        let mut file = File::create(get_fav_path(self.has_data_dir)).unwrap();
         file.write_all(json.as_bytes()).unwrap();
     }
     pub fn get_filtered_sessions(&self) -> (Vec<FavSessionInfo>, Vec<FavSessionInfo>) {
@@ -209,12 +205,23 @@ impl Favs {
 }
 
 impl ZellijPlugin for Favs {
-    fn load(&mut self, _configuration: std::collections::BTreeMap<String, String>) {
+    fn load(&mut self, configuration: std::collections::BTreeMap<String, String>) {
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
+            PermissionType::FullHdAccess,
         ]);
         subscribe(&[EventType::Key, EventType::SessionUpdate]);
+        if let Some(data_dir) = configuration.get("data_dir") {
+            eprintln!("data_dir: {:?}", data_dir);
+            change_host_folder(PathBuf::from(data_dir));
+            self.has_data_dir = true;
+        }
+        if !std::path::Path::new(get_fav_path(self.has_data_dir)).exists() {
+            let create = File::create(get_fav_path(self.has_data_dir));
+            let mut file = create.unwrap();
+            file.write_all(FAVS_TEMPLATE.as_bytes()).unwrap();
+        }
     }
 
     fn update(&mut self, event: zellij_tile::prelude::Event) -> bool {
@@ -240,9 +247,8 @@ impl ZellijPlugin for Favs {
                 }));
 
                 let fav_sessions_json: Vec<String> =
-                    serde_json::from_reader(File::open(FAVS_PATH_TMP).unwrap()).unwrap();
-
-                eprintln!("fav_sessions_json: {:?}", fav_sessions_json);
+                    serde_json::from_reader(File::open(get_fav_path(self.has_data_dir)).unwrap())
+                        .unwrap();
 
                 let (fav_sessions, flush_sessions): (Vec<FavSessionInfo>, Vec<FavSessionInfo>) =
                     current_sessions

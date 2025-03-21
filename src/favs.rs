@@ -137,7 +137,7 @@ impl Favs {
             }
             let selected_idx = self.cursor.min(sessions_space - 1);
             let text = if self.mode == FavMode::NavigateFavs && selected_idx == i {
-                let selected = format!("{} {}", ">".cyan(), session.name.clone());
+                let selected = format!("{} {}", ">", session.name.clone());
                 Text::new(selected).selected()
             } else {
                 Text::new(session.name.clone())
@@ -177,7 +177,7 @@ impl Favs {
             }
             let selected_idx = self.cursor.min(sessions_space - 1);
             let text = if self.mode == FavMode::NavigateFlush && selected_idx == i {
-                let selected = format!("{} {}", ">".cyan(), session.name.clone());
+                let selected = format!("{} {}", ">", session.name.clone());
                 Text::new(selected).selected()
             } else {
                 Text::new(session.name.clone())

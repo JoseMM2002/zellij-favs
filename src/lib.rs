@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 pub mod assign_number;
@@ -7,17 +9,40 @@ pub mod filter;
 pub mod help;
 pub mod navigate;
 
-pub const FAVS_TEMPLATE: &str = r#"{"favs": [],"flush":[]}"#;
-pub const FAVS_PATH_CACHE: &str = "/cache/favs.json";
-pub const FAVS_PATH_TMP: &str = "/tmp/favs.json";
-pub const FAVS_PATH_DATA: &str = "/data/favs.json";
-pub const FAVS_PATH_HOST: &str = "/host/favs.json";
-
-pub const FAVS_SYNC_MESSAGE_NAME: &str = "favs_sync";
-
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct FavSessionInfo {
-    name: String,
-    is_active: bool,
-    assigned_number: Option<u8>,
+    pub name: String,
+    pub is_active: bool,
+    pub assigned_number: Option<u8>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Copy, Debug)]
+pub enum FavsCommandType {
+    ReadCache,
+    WriteCache,
+}
+
+impl Display for FavsCommandType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FavsCommandType::ReadCache => write!(f, "ReadCache"),
+            FavsCommandType::WriteCache => write!(f, "WriteCache"),
+        }
+    }
+}
+
+impl From<&String> for FavsCommandType {
+    fn from(value: &String) -> Self {
+        match value.as_str() {
+            "ReadCache" => FavsCommandType::ReadCache,
+            "WriteCache" => FavsCommandType::WriteCache,
+            _ => FavsCommandType::ReadCache,
+        }
+    }
+}
+
+impl FavsCommandType {
+    pub fn get_command_key() -> String {
+        "command_type".to_string()
+    }
 }

@@ -1,4 +1,4 @@
-use std::{fs::File, io::Write};
+use std::collections::BTreeMap;
 
 use owo_colors::OwoColorize;
 use serde::{Deserialize, Serialize};
@@ -10,8 +10,7 @@ use zellij_tile::{
 
 use crate::{
     assign_number::match_assignation_keys, favs_mode::FavMode, filter::match_filter_key,
-    help::match_help_keys, navigate::match_navigation_keys, FavSessionInfo, FAVS_PATH_TMP,
-    FAVS_TEMPLATE,
+    help::match_help_keys, navigate::match_navigation_keys, FavSessionInfo, FavsCommandType,
 };
 
 pub struct Favs {
@@ -21,24 +20,26 @@ pub struct Favs {
     pub mode: FavMode,
     pub current_column: Option<FavMode>,
     pub filter: Option<String>,
-    pub has_data_dir: bool,
+    pub has_loaded: bool,
+    pub cache_dir: String,
 }
 
 impl Default for Favs {
     fn default() -> Self {
         Self {
+            has_loaded: false,
             fav_sessions: vec![],
             cursor: 0,
             mode: FavMode::NavigateFavs,
             current_column: None,
             filter: None,
             flush_sessions: vec![],
-            has_data_dir: false,
+            cache_dir: String::from("~/.cache/favs.json"),
         }
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FavsJson {
     pub favs: Vec<FavSessionInfo>,
     pub flush: Vec<FavSessionInfo>,
@@ -65,9 +66,20 @@ impl Favs {
     pub fn commit_fav_changes(&self) {
         let favs_info: FavsJson = self.into();
         let json = serde_json::to_string(&favs_info).unwrap();
+        let mut data = BTreeMap::new();
+        data.insert(
+            FavsCommandType::get_command_key(),
+            FavsCommandType::WriteCache.to_string(),
+        );
 
-        let mut file = File::create(FAVS_PATH_TMP).unwrap();
-        file.write_all(json.as_bytes()).unwrap();
+        run_command(
+            &[
+                "bash",
+                "-c",
+                format!("echo '{}' > {}", json, self.cache_dir).as_str(),
+            ],
+            data,
+        );
     }
     pub fn get_mut_filtered_sessions(
         &mut self,
@@ -271,21 +283,36 @@ impl Favs {
             }
         }
     }
+    pub fn load_cache(&self) {
+        let mut data = BTreeMap::new();
+        data.insert(
+            FavsCommandType::get_command_key(),
+            FavsCommandType::ReadCache.to_string(),
+        );
+
+        run_command(
+            &["bash", "-c", format!("cat {}", self.cache_dir).as_str()],
+            data,
+        );
+    }
 }
 
 impl ZellijPlugin for Favs {
-    fn load(&mut self, _configuration: std::collections::BTreeMap<String, String>) {
+    fn load(&mut self, configuration: std::collections::BTreeMap<String, String>) {
+        if let Some(cache_dir) = configuration.get("cache_dir") {
+            self.cache_dir = cache_dir.to_string();
+        }
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
             PermissionType::FullHdAccess,
+            PermissionType::RunCommands,
         ]);
-        subscribe(&[EventType::Key, EventType::SessionUpdate]);
-        if !std::path::Path::new(FAVS_PATH_TMP).exists() {
-            let create = File::create(FAVS_PATH_TMP);
-            let mut file = create.unwrap();
-            file.write_all(FAVS_TEMPLATE.as_bytes()).unwrap();
-        }
+        subscribe(&[
+            EventType::Key,
+            EventType::SessionUpdate,
+            EventType::RunCommandResult,
+        ]);
     }
 
     fn update(&mut self, event: zellij_tile::prelude::Event) -> bool {
@@ -295,6 +322,9 @@ impl ZellijPlugin for Favs {
                 render = self.match_key(&key.bare_key);
             }
             Event::SessionUpdate(sessions_info, resurrectable_session_list) => {
+                if !self.has_loaded {
+                    self.load_cache();
+                }
                 let mut current_sessions: Vec<String> =
                     sessions_info.iter().map(|s| s.name.clone()).collect();
                 current_sessions.extend(
@@ -303,21 +333,18 @@ impl ZellijPlugin for Favs {
                         .map(|session_info| session_info.0.clone()),
                 );
 
-                let favs_json: FavsJson =
-                    serde_json::from_reader(File::open(FAVS_PATH_TMP).unwrap()).unwrap();
-
                 let mut fav_sessions: Vec<FavSessionInfo> = vec![];
                 let mut flush_sessions: Vec<FavSessionInfo> = vec![];
 
                 for session_name in current_sessions.iter() {
-                    if let Some(fav_session) = favs_json
-                        .favs
+                    if let Some(fav_session) = self
+                        .fav_sessions
                         .iter()
                         .find(|session| *session_name == session.name)
                     {
                         fav_sessions.push(fav_session.to_owned());
-                    } else if let Some(flush_session) = favs_json
-                        .flush
+                    } else if let Some(flush_session) = self
+                        .flush_sessions
                         .iter()
                         .find(|session| *session_name == session.name)
                     {
@@ -331,22 +358,45 @@ impl ZellijPlugin for Favs {
                     }
                 }
 
-                self.fav_sessions = fav_sessions;
-                self.flush_sessions = flush_sessions;
+                if self.fav_sessions != fav_sessions
+                    || self.flush_sessions != flush_sessions && self.has_loaded
+                {
+                    self.fav_sessions = fav_sessions;
+                    self.flush_sessions = flush_sessions;
 
-                match self.mode {
-                    FavMode::NavigateFavs => {
-                        self.cursor = self.cursor.min(self.fav_sessions.len());
+                    match self.mode {
+                        FavMode::NavigateFavs => {
+                            self.cursor = self.cursor.min(self.fav_sessions.len());
+                        }
+                        FavMode::NavigateFlush => {
+                            self.cursor = self.cursor.min(self.flush_sessions.len());
+                        }
+                        _ => {}
                     }
-                    FavMode::NavigateFlush => {
-                        self.cursor = self.cursor.min(self.flush_sessions.len());
-                    }
-                    _ => {}
+                    self.commit_fav_changes();
+                    render = true;
                 }
-
-                self.commit_fav_changes();
-
-                render = true;
+            }
+            Event::RunCommandResult(exit_code, stdout, _stderr, context) => {
+                if exit_code != None && exit_code != Some(0) {
+                    return false;
+                }
+                if let Some(command_type) = context.get(FavsCommandType::get_command_key().as_str())
+                {
+                    let command_type_enum: FavsCommandType = command_type.into();
+                    match command_type_enum {
+                        FavsCommandType::ReadCache => {
+                            let json_string = String::from_utf8(stdout);
+                            let sessions: FavsJson =
+                                serde_json::from_str(json_string.unwrap().as_str()).unwrap();
+                            self.fav_sessions = sessions.favs;
+                            self.flush_sessions = sessions.flush;
+                            self.has_loaded = true;
+                            render = true;
+                        }
+                        _ => {}
+                    }
+                }
             }
             _ => {}
         }

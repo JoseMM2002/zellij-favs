@@ -2,13 +2,14 @@
 
 A simple and intuitive plugin for managing favorite sessions in Zellij. With zellij-favs, you can keep your favorite sessions organized and easily flush away the unwanted ones.
 
-![Preview](pictures/PREVIEW.jpeg)
+![Preview](pictures/PREVIEW.png)
 
 # Features
 
 - Filter Sessions: Use / to filter through your sessions quickly.
 - Switch Between Lists: Press Tab to toggle between the "Favorites" and "Flush" lists.
 - Move Sessions: Select a session and press Space to move it between the lists.
+- Quick Number Access: Press A to assign numbers (0-9) to sessions, then use those numbers for instant access.
 - Flush Unwanted Sessions: Press F to remove all non-favorite sessions.
 - Access Sessions: Press Enter, Left Arrow, or Right Arrow to access the highlighted session.
 
@@ -24,16 +25,21 @@ A simple and intuitive plugin for managing favorite sessions in Zellij. With zel
 - Managing Sessions:
   Highlight a session and press Space to move it between "Favorites" and "Sessions."
 
+- Quick Number Assignment:
+  Press A to enter assign mode, then press any digit (0-9) to assign that number to the highlighted session.
+  Once assigned, press the number key to instantly access that session from anywhere in the plugin.
+
 - Flushing Sessions:
   Press F to flush all unwanted sessions from the list.
 
 - Accessing a Session:
   Highlight a session and press Enter to open it.
+  Or use assigned number keys (0-9) for instant access to numbered sessions.
 
 - Close panel plugin:
   Press Esc to exit the plugin
 
-![help](pictures/HELP_COMMANDS.jpeg)
+![help](pictures/HELP_COMMANDS.png)
 
 # Installation
 
@@ -75,7 +81,6 @@ bind "Ctrl {char}" {
 - [x] Make a plugin that allows users to manage their favorite sessions in Zellij.
 - [x] Keep the plugin data available and synchronized on multiple terminal sessions.
 - [ ] Keep the plugin data after reboot
-- [ ] Add a configuration file to customize the plugin behavior.
 - [x] Add pane to show plugin commands and keybinds.
 
 # Contributing

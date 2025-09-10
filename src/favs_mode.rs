@@ -7,6 +7,7 @@ pub enum FavMode {
     #[default]
     NavigateFavs,
     NavigateFlush,
+    AssignNumber,
     Filter,
     Help,
 }
@@ -28,12 +29,16 @@ impl FavMode {
                 ("<Enter>", "Open session"),
                 ("<Space>", "Move session to Flush/Favorites"),
                 ("<Tab>", "Navigate Flush/Favorites items"),
+                ("a", "Add quick access number"),
                 ("↑k | ↓j", "Move cursor"),
                 ("/", "Filter"),
                 ("?", "Help"),
                 ("<Esc> | 'q'", "Close"),
             ],
             FavMode::Help => vec![("<Esc> | 'q'", "Close help")],
+            FavMode::AssignNumber => {
+                vec![("0 - 9", "Assign quick access number"), ("<Esc>", "Close")]
+            }
         }
     }
     pub fn variants() -> Vec<Self> {
@@ -41,6 +46,7 @@ impl FavMode {
             FavMode::NavigateFavs,
             FavMode::NavigateFlush,
             FavMode::Filter,
+            FavMode::AssignNumber,
             FavMode::Help,
         ]
     }
@@ -60,6 +66,7 @@ impl Display for FavMode {
             FavMode::NavigateFavs | FavMode::NavigateFlush => write!(f, "Navigate"),
             FavMode::Filter => write!(f, "Filter"),
             FavMode::Help => write!(f, "Help"),
+            FavMode::AssignNumber => write!(f, "Assign Number"),
         }
     }
 }

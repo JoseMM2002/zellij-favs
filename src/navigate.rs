@@ -57,6 +57,10 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
                 .retain(|session| flush_sessions.iter().any(|s| s.name == session.name));
             ctx.commit_fav_changes();
         }
+        BareKey::Char('a') => {
+            ctx.current_column = Some(ctx.mode.clone());
+            ctx.mode = FavMode::AssignNumber;
+        }
         BareKey::Char('/') => {
             ctx.mode = FavMode::Filter;
             ctx.filter = Some(String::new());
@@ -117,12 +121,33 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
                 flush_sessions[ctx.cursor].clone()
             };
             switch_session(Some(session.name.as_str()));
+            close_focus();
         }
         BareKey::Esc | BareKey::Char('q') => {
             close_self();
         }
         BareKey::Char('?') => {
             ctx.mode = FavMode::Help;
+        }
+        BareKey::Char(c) if c.is_ascii_digit() => {
+            let digit = c.to_digit(10).unwrap() as u8;
+            let (fav_sessions, flush_sessions) = ctx.get_filtered_sessions();
+            for session in fav_sessions.iter() {
+                if let Some(assigned) = session.assigned_number {
+                    if assigned == digit {
+                        switch_session(Some(session.name.as_str()));
+                        close_focus();
+                    }
+                }
+            }
+            for session in flush_sessions.iter() {
+                if let Some(assigned) = session.assigned_number {
+                    if assigned == digit {
+                        switch_session(Some(session.name.as_str()));
+                        close_focus();
+                    }
+                }
+            }
         }
         _ => return false,
     };

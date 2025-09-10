@@ -1,6 +1,7 @@
-use std::{fs::File, io::Write, path::PathBuf};
+use std::{fs::File, io::Write};
 
 use owo_colors::OwoColorize;
+use serde::{Deserialize, Serialize};
 use zellij_tile::{
     prelude::*,
     shim::{print_text_with_coordinates, request_permission, subscribe, Text},
@@ -8,8 +9,9 @@ use zellij_tile::{
 };
 
 use crate::{
-    favs_mode::FavMode, filter::match_filter_key, get_fav_path, help::match_help_keys,
-    navigate::match_navigation_keys, FavSessionInfo, FAVS_TEMPLATE,
+    assign_number::match_assignation_keys, favs_mode::FavMode, filter::match_filter_key,
+    help::match_help_keys, navigate::match_navigation_keys, FavSessionInfo, FAVS_PATH_TMP,
+    FAVS_TEMPLATE,
 };
 
 pub struct Favs {
@@ -17,6 +19,7 @@ pub struct Favs {
     pub flush_sessions: Vec<FavSessionInfo>,
     pub cursor: usize,
     pub mode: FavMode,
+    pub current_column: Option<FavMode>,
     pub filter: Option<String>,
     pub has_data_dir: bool,
 }
@@ -27,9 +30,25 @@ impl Default for Favs {
             fav_sessions: vec![],
             cursor: 0,
             mode: FavMode::NavigateFavs,
+            current_column: None,
             filter: None,
             flush_sessions: vec![],
             has_data_dir: false,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct FavsJson {
+    pub favs: Vec<FavSessionInfo>,
+    pub flush: Vec<FavSessionInfo>,
+}
+
+impl Into<FavsJson> for &Favs {
+    fn into(self) -> FavsJson {
+        FavsJson {
+            favs: self.fav_sessions.clone(),
+            flush: self.flush_sessions.clone(),
         }
     }
 }
@@ -39,19 +58,37 @@ impl Favs {
         match &mut self.mode {
             FavMode::Filter => match_filter_key(self, key),
             FavMode::Help => match_help_keys(self, key),
+            FavMode::AssignNumber => match_assignation_keys(self, key),
             _ => match_navigation_keys(self, key),
         }
     }
     pub fn commit_fav_changes(&self) {
-        let favs_to_save: Vec<String> = self
-            .fav_sessions
-            .iter()
-            .map(|session| session.name.clone())
-            .collect();
-        let json = serde_json::to_string(&favs_to_save).unwrap();
+        let favs_info: FavsJson = self.into();
+        let json = serde_json::to_string(&favs_info).unwrap();
 
-        let mut file = File::create(get_fav_path(self.has_data_dir)).unwrap();
+        let mut file = File::create(FAVS_PATH_TMP).unwrap();
         file.write_all(json.as_bytes()).unwrap();
+    }
+    pub fn get_mut_filtered_sessions(
+        &mut self,
+    ) -> (Vec<&mut FavSessionInfo>, Vec<&mut FavSessionInfo>) {
+        if let Some(filter) = self.filter.clone() {
+            return (
+                self.fav_sessions
+                    .iter_mut()
+                    .filter(|session| session.name.to_lowercase().contains(&filter.to_lowercase()))
+                    .collect(),
+                self.flush_sessions
+                    .iter_mut()
+                    .filter(|session| session.name.to_lowercase().contains(&filter.to_lowercase()))
+                    .collect(),
+            );
+        }
+
+        (
+            self.fav_sessions.iter_mut().collect(),
+            self.flush_sessions.iter_mut().collect(),
+        )
     }
     pub fn get_filtered_sessions(&self) -> (Vec<FavSessionInfo>, Vec<FavSessionInfo>) {
         let flush_sessions: Vec<FavSessionInfo> = self
@@ -132,11 +169,27 @@ impl Favs {
                 break;
             }
             let selected_idx = self.cursor.min(sessions_space - 1);
-            let text = if self.mode == FavMode::NavigateFavs && selected_idx == i {
-                let selected = format!("{} {}", ">", session.name.clone());
-                Text::new(selected)
+            let assigned_number = if let Some(assigned) = session.assigned_number {
+                format!(" ({})", assigned).dimmed().to_string()
             } else {
-                Text::new(session.name.clone())
+                "".to_string()
+            };
+            let text = if self.mode == FavMode::NavigateFavs && selected_idx == i {
+                let selected = format!(
+                    "> {}{}",
+                    session.name.clone().underline().to_string(),
+                    assigned_number
+                );
+                Text::new(selected)
+            } else if self.mode == FavMode::AssignNumber
+                && self.current_column == Some(FavMode::NavigateFavs)
+                && selected_idx == i
+            {
+                let editing_access_text =
+                    format!("> {} {}", session.name.clone(), "(0-9)".dimmed());
+                Text::new(editing_access_text)
+            } else {
+                Text::new(format!("{}{}", session.name.clone(), assigned_number))
             };
 
             print_text_with_coordinates(text, 0, 2 + i, None, None);
@@ -171,12 +224,28 @@ impl Favs {
             if i >= sessions_space {
                 break;
             }
+
             let selected_idx = self.cursor.min(sessions_space - 1);
-            let text = if self.mode == FavMode::NavigateFlush && selected_idx == i {
-                let selected = format!("{} {}", ">", session.name.clone());
-                Text::new(selected)
+            let assigned_number = if let Some(assigned) = session.assigned_number {
+                format!(" ({})", assigned).dimmed().to_string()
             } else {
-                Text::new(session.name.clone())
+                "".to_string()
+            };
+            let text = if self.mode == FavMode::NavigateFlush && selected_idx == i {
+                let selected = format!(
+                    "> {}{}",
+                    session.name.clone().underline().to_string(),
+                    assigned_number
+                );
+                Text::new(selected)
+            } else if self.mode == FavMode::AssignNumber
+                && self.current_column == Some(FavMode::NavigateFlush)
+                && selected_idx == i
+            {
+                let editing_access_text = format!("> {} ({})", session.name.clone(), "0-9");
+                Text::new(editing_access_text)
+            } else {
+                Text::new(format!("{}{}", session.name.clone(), assigned_number))
             };
             print_text_with_coordinates(text, half_cols, 2 + i, None, None);
         }
@@ -205,20 +274,15 @@ impl Favs {
 }
 
 impl ZellijPlugin for Favs {
-    fn load(&mut self, configuration: std::collections::BTreeMap<String, String>) {
+    fn load(&mut self, _configuration: std::collections::BTreeMap<String, String>) {
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
             PermissionType::FullHdAccess,
         ]);
         subscribe(&[EventType::Key, EventType::SessionUpdate]);
-        if let Some(data_dir) = configuration.get("data_dir") {
-            eprintln!("data_dir: {:?}", data_dir);
-            change_host_folder(PathBuf::from(data_dir));
-            self.has_data_dir = true;
-        }
-        if !std::path::Path::new(get_fav_path(self.has_data_dir)).exists() {
-            let create = File::create(get_fav_path(self.has_data_dir));
+        if !std::path::Path::new(FAVS_PATH_TMP).exists() {
+            let create = File::create(FAVS_PATH_TMP);
             let mut file = create.unwrap();
             file.write_all(FAVS_TEMPLATE.as_bytes()).unwrap();
         }
@@ -231,30 +295,41 @@ impl ZellijPlugin for Favs {
                 render = self.match_key(&key.bare_key);
             }
             Event::SessionUpdate(sessions_info, resurrectable_session_list) => {
-                let mut current_sessions: Vec<FavSessionInfo> = sessions_info
-                    .iter()
-                    .map(|session_info| FavSessionInfo {
-                        name: session_info.name.clone(),
-                        is_active: true,
-                    })
-                    .collect();
-
-                current_sessions.extend(resurrectable_session_list.iter().map(|session_info| {
-                    FavSessionInfo {
-                        name: session_info.0.clone(),
-                        is_active: false,
-                    }
-                }));
-
-                let fav_sessions_json: Vec<String> =
-                    serde_json::from_reader(File::open(get_fav_path(self.has_data_dir)).unwrap())
-                        .unwrap();
-
-                let (fav_sessions, flush_sessions): (Vec<FavSessionInfo>, Vec<FavSessionInfo>) =
-                    current_sessions
+                let mut current_sessions: Vec<String> =
+                    sessions_info.iter().map(|s| s.name.clone()).collect();
+                current_sessions.extend(
+                    resurrectable_session_list
                         .iter()
-                        .cloned()
-                        .partition(|current| fav_sessions_json.contains(&current.name));
+                        .map(|session_info| session_info.0.clone()),
+                );
+
+                let favs_json: FavsJson =
+                    serde_json::from_reader(File::open(FAVS_PATH_TMP).unwrap()).unwrap();
+
+                let mut fav_sessions: Vec<FavSessionInfo> = vec![];
+                let mut flush_sessions: Vec<FavSessionInfo> = vec![];
+
+                for session_name in current_sessions.iter() {
+                    if let Some(fav_session) = favs_json
+                        .favs
+                        .iter()
+                        .find(|session| *session_name == session.name)
+                    {
+                        fav_sessions.push(fav_session.to_owned());
+                    } else if let Some(flush_session) = favs_json
+                        .flush
+                        .iter()
+                        .find(|session| *session_name == session.name)
+                    {
+                        flush_sessions.push(flush_session.to_owned());
+                    } else {
+                        flush_sessions.push(FavSessionInfo {
+                            name: session_name.to_string(),
+                            is_active: true,
+                            assigned_number: None,
+                        });
+                    }
+                }
 
                 self.fav_sessions = fav_sessions;
                 self.flush_sessions = flush_sessions;

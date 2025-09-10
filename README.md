@@ -68,7 +68,7 @@ shared_except "locked" {
 
 ```kdl
 bind "Ctrl {char}" {
-    LaunchOrFocusPlugin "https://github.com/JoseMM2002/zellij-favs/releases/download/v0.1.8/zellij-favs.wasm" {
+    LaunchOrFocusPlugin "https://github.com/JoseMM2002/zellij-favs/releases/download/v1.0.0/zellij-favs.wasm" {
         floating true
         ignore_case true
         quick_jump true

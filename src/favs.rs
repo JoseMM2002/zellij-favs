@@ -378,7 +378,8 @@ impl ZellijPlugin for Favs {
             }
             Event::RunCommandResult(exit_code, stdout, _stderr, context) => {
                 if exit_code != None && exit_code != Some(0) {
-                    return false;
+                    self.has_loaded = true;
+                    return true;
                 }
                 if let Some(command_type) = context.get(FavsCommandType::get_command_key().as_str())
                 {

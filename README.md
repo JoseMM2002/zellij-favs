@@ -57,8 +57,7 @@ shared_except "locked" {
     bind "Ctrl {char}" {
         LaunchOrFocusPlugin "file:~/.config/zellij/plugins/zellij-favs.wasm" {
             floating true
-            ignore_case true
-            quick_jump true
+            cache_dir "/path/to/cache/"
         }
     }
 }
@@ -70,8 +69,7 @@ shared_except "locked" {
 bind "Ctrl {char}" {
     LaunchOrFocusPlugin "https://github.com/JoseMM2002/zellij-favs/releases/download/v1.0.0/zellij-favs.wasm" {
         floating true
-        ignore_case true
-        quick_jump true
+        cache_dir "/path/to/cache/"
     }
 }
 ```

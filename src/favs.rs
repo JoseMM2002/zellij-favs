@@ -305,7 +305,6 @@ impl ZellijPlugin for Favs {
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
-            PermissionType::FullHdAccess,
             PermissionType::RunCommands,
         ]);
         subscribe(&[

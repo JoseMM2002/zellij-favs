@@ -131,8 +131,7 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
         }
         BareKey::Char(c) if c.is_ascii_digit() => {
             let digit = c.to_digit(10).unwrap() as u8;
-            let (fav_sessions, flush_sessions) = ctx.get_filtered_sessions();
-            for session in fav_sessions.iter() {
+            for session in ctx.fav_sessions.iter() {
                 if let Some(assigned) = session.assigned_number {
                     if assigned == digit {
                         switch_session(Some(session.name.as_str()));
@@ -140,7 +139,7 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
                     }
                 }
             }
-            for session in flush_sessions.iter() {
+            for session in ctx.flush_sessions.iter() {
                 if let Some(assigned) = session.assigned_number {
                     if assigned == digit {
                         switch_session(Some(session.name.as_str()));

@@ -344,7 +344,12 @@ impl ZellijPlugin for Favs {
                         (
                             &s.name,
                             s.tabs.len(),
-                            s.panes.panes.values().map(|v| v.len()).sum(),
+                            s.panes
+                                .panes
+                                .values()
+                                .flat_map(|v| v.iter())
+                                .filter(|pane| !(pane.is_plugin))
+                                .count(),
                             true,
                         )
                     })

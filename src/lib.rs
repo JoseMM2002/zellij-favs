@@ -14,6 +14,8 @@ pub struct FavSessionInfo {
     pub name: String,
     pub is_active: bool,
     pub assigned_number: Option<u8>,
+    pub tabs: usize,
+    pub panes: usize,
 }
 
 #[derive(Clone, Serialize, Deserialize, Copy, Debug)]

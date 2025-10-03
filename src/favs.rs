@@ -186,11 +186,13 @@ impl Favs {
             } else {
                 "".to_string()
             };
+            let counts = format!(" ({} tabs, {} panes)", session.tabs, session.panes);
             let text = if self.mode == FavMode::NavigateFavs && selected_idx == i {
                 let selected = format!(
-                    "> {}{}",
-                    session.name.clone().underline().to_string(),
-                    assigned_number
+                    "> {}{}{}",
+                    session.name.clone().underline(),
+                    assigned_number,
+                    counts.dimmed()
                 );
                 Text::new(selected)
             } else if self.mode == FavMode::AssignNumber
@@ -201,7 +203,12 @@ impl Favs {
                     format!("> {} {}", session.name.clone(), "(0-9)".dimmed());
                 Text::new(editing_access_text)
             } else {
-                Text::new(format!("{}{}", session.name.clone(), assigned_number))
+                Text::new(format!(
+                    "{}{}{}",
+                    session.name.clone(),
+                    assigned_number,
+                    counts.dimmed()
+                ))
             };
 
             print_text_with_coordinates(text, 0, 2 + i, None, None);
@@ -243,11 +250,13 @@ impl Favs {
             } else {
                 "".to_string()
             };
+            let counts = format!(" ({} tabs, {} panes)", session.tabs, session.panes);
             let text = if self.mode == FavMode::NavigateFlush && selected_idx == i {
                 let selected = format!(
-                    "> {}{}",
-                    session.name.clone().underline().to_string(),
-                    assigned_number
+                    "> {}{}{}",
+                    session.name.clone().underline(),
+                    assigned_number,
+                    counts.dimmed()
                 );
                 Text::new(selected)
             } else if self.mode == FavMode::AssignNumber
@@ -257,7 +266,12 @@ impl Favs {
                 let editing_access_text = format!("> {} ({})", session.name.clone(), "0-9");
                 Text::new(editing_access_text)
             } else {
-                Text::new(format!("{}{}", session.name.clone(), assigned_number))
+                Text::new(format!(
+                    "{}{}{}",
+                    session.name.clone(),
+                    assigned_number,
+                    counts.dimmed()
+                ))
             };
             print_text_with_coordinates(text, half_cols, 2 + i, None, None);
         }
@@ -324,35 +338,52 @@ impl ZellijPlugin for Favs {
                 if !self.has_loaded {
                     self.load_cache();
                 }
-                let mut current_sessions: Vec<String> =
-                    sessions_info.iter().map(|s| s.name.clone()).collect();
-                current_sessions.extend(
+                let mut all_sessions: Vec<(&String, usize, usize, bool)> = sessions_info
+                    .iter()
+                    .map(|s| {
+                        (
+                            &s.name,
+                            s.tabs.len(),
+                            s.panes.panes.values().map(|v| v.len()).sum(),
+                            true,
+                        )
+                    })
+                    .collect();
+                all_sessions.extend(
                     resurrectable_session_list
                         .iter()
-                        .map(|session_info| session_info.0.clone()),
+                        .map(|s| (&s.0, 0, 0, false)),
                 );
 
                 let mut fav_sessions: Vec<FavSessionInfo> = vec![];
                 let mut flush_sessions: Vec<FavSessionInfo> = vec![];
 
-                for session_name in current_sessions.iter() {
-                    if let Some(fav_session) = self
-                        .fav_sessions
-                        .iter()
-                        .find(|session| *session_name == session.name)
+                for (session_name, tabs, panes, is_active) in all_sessions {
+                    if let Some(fav_session) =
+                        self.fav_sessions.iter().find(|s| &s.name == session_name)
                     {
-                        fav_sessions.push(fav_session.to_owned());
-                    } else if let Some(flush_session) = self
-                        .flush_sessions
-                        .iter()
-                        .find(|session| *session_name == session.name)
+                        fav_sessions.push(FavSessionInfo {
+                            tabs,
+                            panes,
+                            is_active,
+                            ..fav_session.clone()
+                        });
+                    } else if let Some(flush_session) =
+                        self.flush_sessions.iter().find(|s| &s.name == session_name)
                     {
-                        flush_sessions.push(flush_session.to_owned());
+                        flush_sessions.push(FavSessionInfo {
+                            tabs,
+                            panes,
+                            is_active,
+                            ..flush_session.clone()
+                        });
                     } else {
                         flush_sessions.push(FavSessionInfo {
                             name: session_name.to_string(),
-                            is_active: true,
+                            is_active,
                             assigned_number: None,
+                            tabs,
+                            panes,
                         });
                     }
                 }
@@ -377,24 +408,22 @@ impl ZellijPlugin for Favs {
                 }
             }
             Event::RunCommandResult(exit_code, stdout, _stderr, context) => {
-                if exit_code != None && exit_code != Some(0) {
+                if exit_code.is_some() && exit_code != Some(0) {
                     self.has_loaded = true;
                     return true;
                 }
                 if let Some(command_type) = context.get(FavsCommandType::get_command_key().as_str())
                 {
                     let command_type_enum: FavsCommandType = command_type.into();
-                    match command_type_enum {
-                        FavsCommandType::ReadCache => {
-                            let json_string = String::from_utf8(stdout);
-                            let sessions: FavsJson =
-                                serde_json::from_str(json_string.unwrap().as_str()).unwrap();
-                            self.fav_sessions = sessions.favs;
-                            self.flush_sessions = sessions.flush;
-                            self.has_loaded = true;
-                            render = true;
+                    if let FavsCommandType::ReadCache = command_type_enum {
+                        if let Ok(json_string) = String::from_utf8(stdout) {
+                            if let Ok(sessions) = serde_json::from_str::<FavsJson>(&json_string) {
+                                self.fav_sessions = sessions.favs;
+                                self.flush_sessions = sessions.flush;
+                            }
                         }
-                        _ => {}
+                        self.has_loaded = true;
+                        render = true;
                     }
                 }
             }

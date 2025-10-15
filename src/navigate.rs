@@ -129,6 +129,8 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
         BareKey::Char('?') => {
             ctx.mode = FavMode::Help;
         }
+        BareKey::Char('t') => ctx.display_tab_panes = !ctx.display_tab_panes,
+
         BareKey::Char(c) if c.is_ascii_digit() => {
             let digit = c.to_digit(10).unwrap() as u8;
             for session in ctx.fav_sessions.iter() {

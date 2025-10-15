@@ -22,6 +22,7 @@ pub struct Favs {
     pub filter: Option<String>,
     pub has_loaded: bool,
     pub cache_dir: String,
+    pub display_tab_panes: bool,
 }
 
 impl Default for Favs {
@@ -35,6 +36,7 @@ impl Default for Favs {
             filter: None,
             flush_sessions: vec![],
             cache_dir: String::from("~/.cache/favs.json"),
+            display_tab_panes: false,
         }
     }
 }
@@ -186,13 +188,19 @@ impl Favs {
             } else {
                 "".to_string()
             };
-            let counts = format!(" ({} tabs, {} panes)", session.tabs, session.panes);
+
+            let counters = if self.display_tab_panes {
+                format!(" ({} tabs, {} panes)", session.tabs, session.panes)
+            } else {
+                "".to_string()
+            };
+
             let text = if self.mode == FavMode::NavigateFavs && selected_idx == i {
                 let selected = format!(
                     "> {}{}{}",
                     session.name.clone().underline(),
                     assigned_number,
-                    counts.dimmed()
+                    counters.dimmed()
                 );
                 Text::new(selected)
             } else if self.mode == FavMode::AssignNumber
@@ -207,7 +215,7 @@ impl Favs {
                     "{}{}{}",
                     session.name.clone(),
                     assigned_number,
-                    counts.dimmed()
+                    counters.dimmed()
                 ))
             };
 
@@ -250,7 +258,13 @@ impl Favs {
             } else {
                 "".to_string()
             };
-            let counts = format!(" ({} tabs, {} panes)", session.tabs, session.panes);
+
+            let counts = if self.display_tab_panes {
+                format!(" ({} tabs, {} panes)", session.tabs, session.panes)
+            } else {
+                "".to_string()
+            };
+
             let text = if self.mode == FavMode::NavigateFlush && selected_idx == i {
                 let selected = format!(
                     "> {}{}{}",
@@ -316,6 +330,10 @@ impl ZellijPlugin for Favs {
         if let Some(cache_dir) = configuration.get("cache_dir") {
             self.cache_dir = cache_dir.to_string();
         }
+        if let Some(display_tab_panes) = configuration.get("display_tab_panes") {
+            self.display_tab_panes = matches!(display_tab_panes.trim(), "true" | "t" | "y" | "1");
+        }
+
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,

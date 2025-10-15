@@ -57,6 +57,7 @@ shared_except "locked" {
     bind "Ctrl {char}" {
         LaunchOrFocusPlugin "file:~/.config/zellij/plugins/zellij-favs.wasm" {
             floating true
+            display_tab_panes true
             cache_dir "/path/to/cache/file"
         }
     }
@@ -69,6 +70,7 @@ shared_except "locked" {
 bind "Ctrl {char}" {
     LaunchOrFocusPlugin "https://github.com/JoseMM2002/zellij-favs/releases/download/v1.0.1/zellij-favs.wasm" {
         floating true
+        display_tab_panes true
         cache_dir "/path/to/cache/file"
     }
 }

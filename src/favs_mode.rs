@@ -30,6 +30,7 @@ impl FavMode {
                 ("<Space>", "Move session to Flush/Favorites"),
                 ("<Tab>", "Navigate Flush/Favorites items"),
                 ("a", "Add quick access number"),
+                ("t", "Toggle tabs & panes counter"),
                 ("↑k | ↓j", "Move cursor"),
                 ("/", "Filter"),
                 ("?", "Help"),

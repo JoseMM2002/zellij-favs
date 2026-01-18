@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Clone, Serialize, Deserialize, PartialEq)]
 pub enum FavMode {
     #[default]
+    FlushSessions,
     NavigateFavs,
     NavigateFlush,
     AssignNumber,
@@ -15,6 +16,7 @@ pub enum FavMode {
 impl FavMode {
     pub fn get_commands(self) -> Vec<(&'static str, &'static str)> {
         match self {
+            FavMode::FlushSessions => vec![("f", "Delete Flush Sessions")],
             FavMode::Filter => {
                 vec![
                     ("<Enter> | <Tab>", "Use filter"),
@@ -44,6 +46,7 @@ impl FavMode {
     }
     pub fn variants() -> Vec<Self> {
         vec![
+            FavMode::FlushSessions,
             FavMode::NavigateFavs,
             FavMode::NavigateFlush,
             FavMode::Filter,
@@ -64,6 +67,7 @@ impl FavMode {
 impl Display for FavMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            FavMode::FlushSessions => write!(f, "Flush Unwanted Sessions"),
             FavMode::NavigateFavs | FavMode::NavigateFlush => write!(f, "Navigate"),
             FavMode::Filter => write!(f, "Filter"),
             FavMode::Help => write!(f, "Help"),

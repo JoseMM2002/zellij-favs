@@ -33,6 +33,7 @@ impl FavMode {
                 ("t", "Toggle tabs & panes counter"),
                 ("↑k | ↓j", "Move cursor"),
                 ("/", "Filter"),
+                ("f", "Delete Flush Sessions"),
                 ("?", "Help"),
                 ("<Esc> | 'q'", "Close"),
             ],

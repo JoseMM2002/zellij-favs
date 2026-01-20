@@ -47,11 +47,11 @@ pub struct FavsJson {
     pub flush: Vec<FavSessionInfo>,
 }
 
-impl Into<FavsJson> for &Favs {
-    fn into(self) -> FavsJson {
+impl From<&Favs> for FavsJson {
+    fn from(val: &Favs) -> Self {
         FavsJson {
-            favs: self.fav_sessions.clone(),
-            flush: self.flush_sessions.clone(),
+            favs: val.fav_sessions.clone(),
+            flush: val.flush_sessions.clone(),
         }
     }
 }
@@ -190,7 +190,11 @@ impl Favs {
             };
 
             let counters = if self.display_tab_panes {
-                format!(" ({} tabs, {} panes)", session.tabs, session.panes)
+                if session.is_active {
+                    format!(" ({} tabs, {} panes)", session.tabs, session.panes)
+                } else {
+                    " (resurrect)".to_string()
+                }
             } else {
                 "".to_string()
             };

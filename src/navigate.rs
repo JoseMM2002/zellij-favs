@@ -47,10 +47,10 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
                 .map(|session| session.name.clone())
                 .collect();
 
-            kill_sessions(&sessions_to_delete);
+            let _ = kill_sessions(&sessions_to_delete);
 
             for session in flush_sessions.iter() {
-                delete_dead_session(&session.name);
+                let _ = delete_dead_session(&session.name);
             }
 
             ctx.flush_sessions
@@ -134,19 +134,19 @@ pub fn match_navigation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
         BareKey::Char(c) if c.is_ascii_digit() => {
             let digit = c.to_digit(10).unwrap() as u8;
             for session in ctx.fav_sessions.iter() {
-                if let Some(assigned) = session.assigned_number {
-                    if assigned == digit {
-                        switch_session(Some(session.name.as_str()));
-                        close_focus();
-                    }
+                if let Some(assigned) = session.assigned_number
+                    && assigned == digit
+                {
+                    switch_session(Some(session.name.as_str()));
+                    close_focus();
                 }
             }
             for session in ctx.flush_sessions.iter() {
-                if let Some(assigned) = session.assigned_number {
-                    if assigned == digit {
-                        switch_session(Some(session.name.as_str()));
-                        close_focus();
-                    }
+                if let Some(assigned) = session.assigned_number
+                    && assigned == digit
+                {
+                    switch_session(Some(session.name.as_str()));
+                    close_focus();
                 }
             }
         }

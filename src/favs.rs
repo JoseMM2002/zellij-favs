@@ -3,14 +3,14 @@ use std::collections::BTreeMap;
 use owo_colors::OwoColorize;
 use serde::{Deserialize, Serialize};
 use zellij_tile::{
-    prelude::*,
-    shim::{print_text_with_coordinates, request_permission, subscribe, Text},
     ZellijPlugin,
+    prelude::*,
+    shim::{Text, print_text_with_coordinates, request_permission, subscribe},
 };
 
 use crate::{
-    assign_number::match_assignation_keys, favs_mode::FavMode, filter::match_filter_key,
-    help::match_help_keys, navigate::match_navigation_keys, FavSessionInfo, FavsCommandType,
+    FavSessionInfo, FavsCommandType, assign_number::match_assignation_keys, favs_mode::FavMode,
+    filter::match_filter_key, help::match_help_keys, navigate::match_navigation_keys,
 };
 
 pub struct Favs {
@@ -23,6 +23,7 @@ pub struct Favs {
     pub has_loaded: bool,
     pub cache_dir: String,
     pub display_tab_panes: bool,
+    pub cache_error: Option<String>,
 }
 
 impl Default for Favs {
@@ -37,6 +38,7 @@ impl Default for Favs {
             flush_sessions: vec![],
             cache_dir: String::from("~/.cache/favs.json"),
             display_tab_panes: false,
+            cache_error: None,
         }
     }
 }
@@ -434,24 +436,38 @@ impl ZellijPlugin for Favs {
                     render = true;
                 }
             }
-            Event::RunCommandResult(exit_code, stdout, _stderr, context) => {
-                if exit_code.is_some() && exit_code != Some(0) {
-                    self.has_loaded = true;
+            Event::RunCommandResult(exit_code, stdout, stderr, context) => {
+                let command_type = context
+                    .get(FavsCommandType::get_command_key().as_str())
+                    .map(FavsCommandType::from);
+
+                if let Some(exit_code) = exit_code
+                    && exit_code != 0
+                {
+                    let stderr = String::from_utf8(stderr).unwrap_or_default();
+
+                    self.cache_error = Some(stderr.clone());
+                    if matches!(command_type, Some(FavsCommandType::ReadCache))
+                        && stderr.contains("No such file or directory")
+                    {
+                        self.has_loaded = true;
+                        self.commit_fav_changes();
+                        return true;
+                    }
+
                     return true;
                 }
-                if let Some(command_type) = context.get(FavsCommandType::get_command_key().as_str())
+                if let Some(command_type) = command_type
+                    && let FavsCommandType::ReadCache = command_type
                 {
-                    let command_type_enum: FavsCommandType = command_type.into();
-                    if let FavsCommandType::ReadCache = command_type_enum {
-                        if let Ok(json_string) = String::from_utf8(stdout) {
-                            if let Ok(sessions) = serde_json::from_str::<FavsJson>(&json_string) {
-                                self.fav_sessions = sessions.favs;
-                                self.flush_sessions = sessions.flush;
-                            }
-                        }
-                        self.has_loaded = true;
-                        render = true;
+                    if let Ok(json_string) = String::from_utf8(stdout)
+                        && let Ok(sessions) = serde_json::from_str::<FavsJson>(&json_string)
+                    {
+                        self.fav_sessions = sessions.favs;
+                        self.flush_sessions = sessions.flush;
                     }
+                    self.has_loaded = true;
+                    render = true;
                 }
             }
             _ => {}
@@ -466,6 +482,13 @@ impl ZellijPlugin for Favs {
                 self.render_help_commands();
             }
             _ => self.render_navigation(cols, rows),
+        }
+        if let Some(error) = &self.cache_error {
+            let error_label = format!("Error: {}", error);
+            let error_text = format!("{}", error_label.red().bold());
+            let x = cols.saturating_sub(error_label.chars().count());
+            let y = rows.saturating_sub(1);
+            print_text_with_coordinates(Text::new(error_text), x, y, None, None);
         }
     }
 }

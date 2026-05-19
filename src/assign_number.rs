@@ -11,18 +11,18 @@ pub fn match_assignation_keys(ctx: &mut Favs, key: &BareKey) -> bool {
                 let (mut fav_sessions, mut flush_sessions) = ctx.get_mut_filtered_sessions();
 
                 for session in fav_sessions.iter_mut() {
-                    if let Some(assigned) = session.assigned_number {
-                        if assigned == index {
-                            session.assigned_number = None;
-                        }
+                    if let Some(assigned) = session.assigned_number
+                        && assigned == index
+                    {
+                        session.assigned_number = None;
                     }
                 }
 
                 for session in flush_sessions.iter_mut() {
-                    if let Some(assigned) = session.assigned_number {
-                        if assigned == index {
-                            session.assigned_number = None;
-                        }
+                    if let Some(assigned) = session.assigned_number
+                        && assigned == index
+                    {
+                        session.assigned_number = None;
                     }
                 }
 
